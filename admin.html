@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة - EduFlow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a365d; 
+            --secondary-color: #2b6cb0;
+            --admin-accent: #805ad5; 
+            --success-color: #48bb78;
+            --danger-color: #e53e3e;
+            --warning-color: #ecc94b;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+        }
+
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; display: flex; height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--primary-color); color: white; padding: 20px; display: flex; flex-direction: column; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+        .sidebar h2 { text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px; }
+        .sidebar h2 span { display: block; font-size: 14px; color: var(--admin-accent); margin-top: 5px; }
+        .nav-links { list-style: none; padding: 0; }
+        .nav-links li { padding: 12px 15px; margin-bottom: 10px; background-color: rgba(255,255,255,0.05); border-radius: 6px; cursor: pointer; transition: 0.3s; position: relative;}
+        .nav-links li:hover, .nav-links li.active { background-color: var(--admin-accent); border-right: 4px solid white; }
+
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .header-profile { display: flex; justify-content: space-between; align-items: center; background-color: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; border-right: 5px solid var(--admin-accent); }
+        .profile-info { display: flex; align-items: center; gap: 15px; }
+        .profile-pic { width: 60px; height: 60px; background-color: var(--admin-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; }
+        .profile-details h3 { margin: 0 0 5px 0; color: var(--primary-color); }
+        .profile-details p { margin: 0; font-size: 14px; color: var(--text-muted); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background-color: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
+        .stat-card h4 { margin: 0 0 10px 0; color: var(--text-muted); font-size: 14px; }
+        .stat-card .value { font-size: 24px; font-weight: bold; color: var(--primary-color); margin: 0; }
+
+        .dashboard-sections { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .section-card { background-color: var(--card-bg); padding: 25px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .section-card h3 { margin-top: 0; color: var(--primary-color); border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; margin-bottom: 20px;}
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        th { color: var(--text-muted); font-weight: bold; background-color: #f8fafc; }
+        
+        .action-btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; color: white; font-family: inherit; font-size: 12px; transition: 0.3s; margin-left: 5px; }
+        .btn-approve { background-color: var(--success-color); }
+        .btn-reject { background-color: var(--danger-color); }
+        .btn-info { background-color: var(--secondary-color); }
+        .empty-row { text-align: center; color: var(--text-muted); padding: 20px; font-style: italic; }
+
+        .progress-bar-bg { width: 100%; background-color: var(--border-color); border-radius: 10px; height: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: var(--secondary-color); border-radius: 10px; transition: width 1s ease-in-out; }
+
+        .filter-bar { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
+        .form-control { padding: 8px 15px; border: 1px solid var(--border-color); border-radius: 5px; font-family: inherit; font-size: 14px; outline: none; }
+        .course-tag { display: inline-block; background-color: #eef2f7; color: var(--secondary-color); padding: 4px 8px; border-radius: 4px; font-size: 12px; margin: 2px; font-weight: bold; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 80%; max-width: 700px; max-height: 85vh; overflow-y: auto; position: relative; }
+        .close-modal { position: absolute; top: 15px; left: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+
+        .badge { 
+            background-color: var(--danger-color); 
+            color: white; 
+            border-radius: 50%; 
+            padding: 2px 8px; 
+            font-size: 12px; 
+            margin-right: 10px; 
+            display: none; 
+        }
+
+        /* --- تنسيقات طباعة الـ PDF --- */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; direction: rtl; background: white; z-index: 9999; }
+            .sidebar, .header-profile, .filter-bar, .action-btn { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>EduFlow <span>بوابة الإدارة العليا</span></h2>
+        <ul class="nav-links">
+            <li id="tab-dashboard" class="active" onclick="switchTab('dashboard')">لوحة المؤشرات (Dashboard)</li>
+            <li id="tab-messages" onclick="switchTab('messages')">💬 الرسائل والتعاميم <span id="msgBadge" class="badge">0</span></li>
+            <li id="tab-trainers" onclick="switchTab('trainers')">إدارة الأقسام والمدربات</li>
+            <li id="tab-cyber-logs" onclick="switchTab('cyber-logs')">🛡️ سجلات الأمن السيبراني</li>
+            <li id="tab-hr-logs" onclick="switchTab('hr-logs')">👥 سجلات الموارد البشرية</li>
+            <li onclick="handleLogout()" style="color: #feb2b2; cursor: pointer; margin-top: auto;">تسجيل الخروج</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        
+        <div class="header-profile">
+            <div class="profile-info">
+                <div class="profile-pic" id="adminInitial">؟</div>
+                <div class="profile-details">
+                    <h3 id="adminName">جاري التحميل...</h3>
+                    <p id="adminRole">مدير المنشأة التدريبية</p>
+                </div>
+            </div>
+            <div>
+                <button onclick="switchTab('messages')" style="padding: 10px 15px; background: var(--admin-accent); color: white; border: none; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: bold;">+ إرسال تعميم</button>
+            </div>
+        </div>
+
+        <div id="view-dashboard">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>إجمالي الطالبات اليوم</h4>
+                    <p class="value" id="total-students">0</p>
+                </div>
+                
+                <div class="stat-card" style="border-top: 4px solid var(--success-color);">
+                    <h4>الحضور الفعلي</h4>
+                    <p class="value" id="present-students" style="color: var(--success-color);">0</p>
+                    <div class="progress-bar-bg" style="height: 8px; margin-top: 10px;">
+                        <div id="overall-attendance-bar" class="progress-bar-fill" style="width: 0%; background-color: var(--success-color);"></div>
+                    </div>
+                    <p id="overall-attendance-text" style="font-size: 11px; margin-top: 5px;">جاري الحساب...</p>
+                </div>
+
+                <div class="stat-card">
+                    <h4>إجمالي الغياب</h4>
+                    <p class="value" id="absent-students" style="color: var(--danger-color);">0</p>
+                </div>
+                
+                <div class="stat-card" style="border-bottom: 4px solid var(--admin-accent);">
+                    <h4>أعذار بانتظار الاعتماد</h4>
+                    <p class="value" id="pendingCount">0</p>
+                </div>
+            </div>
+
+            <div class="dashboard-sections">
+                <div class="section-card" style="border-top: 4px solid var(--warning-color);">
+                    <h3>📊 إحصائيات الحضور الكلية حسب القسم</h3>
+                    <div style="width: 100%; max-width: 700px; margin: auto;">
+                        <canvas id="deptAttendanceChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3>صندوق الاعتمادات (Live)</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الطالبة</th>
+                                <th>المقرر / القسم</th>
+                                <th>المدربة</th>
+                                <th>السبب</th>
+                                <th>الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="excusesTable">
+                            <tr><td colspan="5" class="empty-row">بانتظار البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-messages" style="display: none;">
+            <div class="dashboard-sections"><div class="section-card" style="border-top: 5px solid var(--admin-accent);">
+    <h3>📢 إنشاء وإرسال تعميم إداري</h3>
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label style="font-size: 12px; color: var(--text-muted); font-weight: bold;">تحديد القسم المستهدف:</label>
+                <select id="targetDept" class="form-control" style="width: 100%; margin-top: 5px;" onchange="updateCircularEmployees()">
+                    <option value="all">الجميع (كافة الأقسام)</option>
+                    <option value="cyber_security">الأمن السيبراني</option>
+                    <option value="human_resources">الموارد البشرية</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 12px; color: var(--text-muted); font-weight: bold;">تحديد موظفة معينة (اختياري):</label>
+                <select id="targetEmployee" class="form-control" style="width: 100%; margin-top: 5px;" disabled>
+                    <option value="all">كافة الموظفات في القسم</option>
+                </select>
+            </div>
+        </div>
+
+        <input type="text" id="circularTitle" class="form-control" placeholder="اكتب عنوان التعميم هنا...">
+        <textarea id="circularBody" class="form-control" rows="4" placeholder="اكتب نص التعميم أو التوجيهات..."></textarea>
+        <button class="action-btn" style="background: var(--admin-accent); font-size: 14px; padding: 12px; width: 200px; font-weight: bold;" onclick="sendCircular()">إرسال التعميم 🚀</button>
+    </div>
+</div>
+
+                <div class="section-card" style="border-top: 5px solid var(--primary-color);">
+                    <h3>📥 صندوق الاستفسارات والشكاوى الواردة</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th width="15%">التاريخ والوقت</th>
+                                <th width="20%">اسم المرسل</th>
+                                <th width="10%">التصنيف</th>
+                                <th width="40%">نص الرسالة</th>
+                                <th width="15%">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="messagesTableBody">
+                            <tr><td colspan="5" class="empty-row">جاري تحميل الرسائل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-trainers" style="display: none;">
+            <div class="section-card" style="border-top: 5px solid var(--secondary-color);">
+                <h3>👥 إدارة الطاقم الإداري والتدريبي</h3>
+                
+                <div class="filter-bar">
+                    <label>تصفية حسب القسم:</label>
+                    <select id="deptFilter" class="form-control" onchange="loadTrainersList()">
+                        <option value="all">عرض جميع الأقسام والموظفات</option>
+                        <option value="cyber_security">الأمن السيبراني</option>
+                        <option value="human_resources">الموارد البشرية</option>
+                        <option value="administration">الإدارة العليا</option>
+                    </select>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="20%">الاسم (المنصب)</th>
+                            <th width="20%">البريد الإلكتروني</th>
+                            <th width="15%">القسم</th>
+                            <th width="20%">الحالة (آخر ظهور)</th>
+                            <th width="25%">المواد (الشعب)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trainersTableBody">
+                        <tr><td colspan="5" class="empty-row">جاري تحميل بيانات الموظفات...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-cyber-logs" style="display: none;">
+            <div class="section-card" style="border-top: 5px solid var(--danger-color);">
+                <h3>🛡️ أرشيف تحضير قسم الأمن السيبراني</h3>
+                <div class="filter-bar">
+                    <input type="text" id="cyberSearch" class="form-control" placeholder="🔍 بحث باسم المدربة أو التاريخ..." onkeyup="filterLogs('cyber')" style="flex: 1;">
+                    <button class="action-btn" onclick="exportLogsToExcel('cyber', 'الأمن السيبراني')" style="background: #38a169;">📥 تفاصيل Excel (عربي)</button>
+                    <button class="action-btn" onclick="exportLogsToPDF('cyber', 'الأمن السيبراني')" style="background: #e53e3e;">🖨️ تقرير PDF للطباعة</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>التاريخ واليوم</th>
+                            <th>الوقت</th>
+                            <th>المقرر</th>
+                            <th>اسم المدربة</th>
+                            <th>عدد الطالبات</th>
+                            <th>الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cyberLogsTableBody">
+                        <tr><td colspan="6" class="empty-row">جاري جلب سجلات الأمن السيبراني...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-hr-logs" style="display: none;">
+            <div class="section-card" style="border-top: 5px solid var(--secondary-color);">
+                <h3>👥 أرشيف تحضير قسم الموارد البشرية</h3>
+                <div class="filter-bar">
+                    <input type="text" id="hrSearch" class="form-control" placeholder="🔍 بحث باسم المدربة أو التاريخ..." onkeyup="filterLogs('hr')" style="flex: 1;">
+                    <button class="action-btn" onclick="exportLogsToExcel('hr', 'الموارد البشرية')" style="background: #38a169;">📥 تفاصيل Excel (عربي)</button>
+                    <button class="action-btn" onclick="exportLogsToPDF('hr', 'الموارد البشرية')" style="background: #e53e3e;">🖨️ تقرير PDF للطباعة</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>التاريخ واليوم</th>
+                            <th>الوقت</th>
+                            <th>المقرر</th>
+                            <th>اسم المدربة</th>
+                            <th>عدد الطالبات</th>
+                            <th>الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hrLogsTableBody">
+                        <tr><td colspan="6" class="empty-row">جاري جلب سجلات الموارد البشرية...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="detailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">✖</button>
+            <h3 id="modalTitle" style="color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">تفاصيل السجل</h3>
+            <table style="margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الحالة</th>
+                        <th>الملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+    // تم إصلاح خطأ الاستيراد المكرر هنا
+    import { getFirestore, collection, query, where, getDocs, onSnapshot, doc, getDoc, updateDoc, addDoc } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCLDQ_Ud6AChKO0UOueeAfNBkdveQwqu-8",
+        authDomain: "uqt-hadeel.firebaseapp.com",
+        projectId: "uqt-hadeel",
+        storageBucket: "uqt-hadeel.firebasestorage.app",
+        messagingSenderId: "886699861255",
+        appId: "1:886699861255:web:256791f33ef0ed0aecd1a2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const deptNamesAr = {
+        'cyber_security': 'الأمن السيبراني',
+        'human_resources': 'الموارد البشرية',
+        'administration': 'الإدارة العليا'
+    };
+
+    let adminChartInstance = null; 
+    let allCyberLogsData = []; 
+    let allHRLogsData = []; 
+    let trainersListener = null;
+
+    // متغيرات الصوت وحالة التحميل
+    const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    let isInitialMessagesLoaded = false;
+
+    // تم إبقاء دالة واحدة صحيحة للتنقل وحذف الدالة المكررة
+    window.switchTab = (tabId) => {
+        document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+
+        document.getElementById('view-dashboard').style.display = tabId === 'dashboard' ? 'block' : 'none';
+        document.getElementById('view-trainers').style.display = tabId === 'trainers' ? 'block' : 'none';
+        document.getElementById('view-messages').style.display = tabId === 'messages' ? 'block' : 'none'; 
+        document.getElementById('view-cyber-logs').style.display = tabId === 'cyber-logs' ? 'block' : 'none';
+        document.getElementById('view-hr-logs').style.display = tabId === 'hr-logs' ? 'block' : 'none'; 
+
+        if(tabId === 'trainers') loadTrainersList(); 
+        if(tabId === 'cyber-logs') loadDepartmentLogs('cyber_security', 'cyberLogsTableBody', allCyberLogsData, 'cyber');
+        if(tabId === 'hr-logs') loadDepartmentLogs('human_resources', 'hrLogsTableBody', allHRLogsData, 'hr');
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+            
+            if (userSnap.exists()) {
+                const data = userSnap.data();
+
+                if (data.role !== 'admin') {
+                    alert("عفواً 🛑 هذه الصفحة مخصصة لمديري النظام فقط. لا تملك الصلاحية للوصول.");
+                    await signOut(auth);
+                    window.location.href = 'log in.html';
+                    return;
+                }
+
+                try {
+                    await updateDoc(userRef, { lastLogin: new Date() });
+                } catch (error) {
+                    console.error("لم يتم تحديث وقت الدخول:", error);
+                }
+
+                document.getElementById('adminName').innerText = data.fullName || 'مدير النظام';
+                document.getElementById('adminInitial').innerText = (data.fullName || 'م').charAt(0);
+                document.getElementById('adminRole').innerText = `مدير النظام | قسم ${deptNamesAr[data.department] || 'العام'}`;
+            } else {
+                window.location.href = 'log in.html';
+            }
+        } else {
+            window.location.href = 'log in.html';
+        }
+    });
+
+    const todayName = new Intl.DateTimeFormat('ar-SA', { weekday: 'long' }).format(new Date());
+    
+    onSnapshot(collection(db, "attendance_logs"), (snap) => {
+        let uniqueStudents = new Set(); 
+        let presentCount = 0; let absentCount = 0;
+        
+        const deptStats = {
+            'cyber_security': { present: 0, absent: 0 },
+            'human_resources': { present: 0, absent: 0 }
+        };
+
+        snap.docs.forEach(d => {
+            const data = d.data();
+            const records = data.records || [];
+            const dept = data.department;
+
+            if(deptStats[dept]) {
+                records.forEach(record => {
+                    if (record.status === 'present' || record.status === 'excused') deptStats[dept].present++;
+                    else if (record.status === 'absent') deptStats[dept].absent++;
+                });
+            }
+
+            if(data.dayOfWeek === todayName) {
+                records.forEach(record => {
+                    const studentKey = record.studentName.trim();
+                    if (!uniqueStudents.has(studentKey)) {
+                        uniqueStudents.add(studentKey);
+                        if (record.status === 'present' || record.status === 'excused') presentCount++;
+                        else absentCount++;
+                    }
+                });
+            }
+        });
+
+        document.getElementById('total-students').innerText = uniqueStudents.size;
+        document.getElementById('present-students').innerText = presentCount;
+        document.getElementById('absent-students').innerText = absentCount;
+        if (uniqueStudents.size > 0) {
+            const per = Math.round((presentCount / uniqueStudents.size) * 100);
+            document.getElementById('overall-attendance-bar').style.width = per + "%";
+            document.getElementById('overall-attendance-text').innerText = `نسبة الحضور الفعلية اليوم: ${per}%`;
+        }
+
+        renderAdminChart(deptStats);
+    });
+
+    function renderAdminChart(deptStats) {
+        const ctx = document.getElementById('deptAttendanceChart').getContext('2d');
+        if (adminChartInstance) adminChartInstance.destroy();
+        adminChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['الأمن السيبراني', 'الموارد البشرية'],
+                datasets: [
+                    { label: 'إجمالي الحضور', data: [deptStats['cyber_security'].present, deptStats['human_resources'].present], backgroundColor: '#48bb78', borderRadius: 5 },
+                    { label: 'إجمالي الغياب', data: [deptStats['cyber_security'].absent, deptStats['human_resources'].absent], backgroundColor: '#e53e3e', borderRadius: 5 }
+                ]
+            },
+            options: { responsive: true, plugins: { legend: { labels: { font: { family: 'Tajawal' } } } }, scales: { y: { beginAtZero: true, ticks: { font: { family: 'Tajawal' } } }, x: { ticks: { font: { family: 'Tajawal' } } } } }
+        });
+    }
+
+    onSnapshot(query(collection(db, "excuses"), where("status", "==", "pending")), (snapshot) => {
+        const tableBody = document.getElementById('excusesTable');
+        document.getElementById('pendingCount').innerText = snapshot.size;
+        if (snapshot.empty) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="empty-row">لا يوجد أعذار بانتظار الاعتماد ✨</td></tr>';
+            return;
+        }
+        tableBody.innerHTML = '';
+        snapshot.forEach((docSnap) => {
+            const excuse = docSnap.data();
+            tableBody.innerHTML += `
+                <tr>
+                    <td><strong>${excuse.studentName}</strong></td>
+                    <td><span style="color:var(--secondary-color)">${deptNamesAr[excuse.department] || excuse.department}</span><br><small>${excuse.course}</small></td>
+                    <td>${excuse.trainerName}</td>
+                    <td>${excuse.reason}</td>
+                    <td>
+                        <button class="action-btn btn-approve" onclick="window.manageExcuse('${docSnap.id}', 'approved')">قبول</button>
+                        <button class="action-btn btn-reject" onclick="window.manageExcuse('${docSnap.id}', 'rejected')">رفض</button>
+                    </td>
+                </tr>`;
+        });
+    });
+
+    window.manageExcuse = async (id, status) => {
+        if (confirm("تأكيد الإجراء؟")) {
+            await updateDoc(doc(db, "excuses", id), { status: status, reviewedAt: new Date() });
+            alert("تم تحديث حالة العذر وإشعار المدربة.");
+        }
+    };
+
+    // 1. الاستماع للرسائل الواردة (شكاوى واستفسارات)
+    onSnapshot(collection(db, "trainer_messages"), (snapshot) => {
+        const tbody = document.getElementById('messagesTableBody');
+        const badge = document.getElementById('msgBadge');
+        let unreadCount = 0;
+        
+        if (snapshot.empty) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-row">لا توجد رسائل في الصندوق حالياً ✨</td></tr>';
+            isInitialMessagesLoaded = true;
+            return;
+        }
+
+        let messagesArray = [];
+        snapshot.forEach(doc => messagesArray.push({ id: doc.id, ...doc.data() }));
+        messagesArray.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+        tbody.innerHTML = '';
+        messagesArray.forEach(msg => {
+            if (msg.status === 'unread') unreadCount++;
+
+            const dateStr = msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString('ar-SA', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'الآن';
+            const typeBadge = msg.type === 'complaint' ? '<span style="color:var(--danger-color); font-weight:bold;">شكوى ⚠️</span>' : '<span style="color:var(--secondary-color); font-weight:bold;">استفسار ❓</span>';
+            const rowStyle = msg.status === 'unread' ? 'background-color: #ebf4ff; font-weight: bold;' : '';
+            const actionBtn = msg.status === 'unread' 
+                ? `<button class="action-btn btn-approve" onclick="markMessageAsRead('${msg.id}')">تحديد كمقروء ✔️</button>` 
+                : `<span style="color:var(--text-muted); font-size:12px;">مقروءة</span>`;
+
+            tbody.innerHTML += `
+                <tr style="${rowStyle}">
+                    <td>${dateStr}</td>
+                    <td><strong>${msg.senderName || 'مدربة'}</strong></td>
+                    <td>${typeBadge}</td>
+                    <td>${msg.content}</td>
+                    <td>${actionBtn}</td>
+                </tr>`;
+        });
+
+        if (unreadCount > 0) {
+            badge.innerText = unreadCount;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+
+        // تشغيل الصوت للإشعارات الجديدة
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added" && isInitialMessagesLoaded) {
+                notificationSound.play().catch(err => console.log("المتصفح يمنع الصوت التلقائي"));
+            }
+        });
+
+        isInitialMessagesLoaded = true;
+    });
+
+ // دالة لجلب الموظفات بناءً على القسم المختار
+window.updateCircularEmployees = async () => {
+    const dept = document.getElementById('targetDept').value;
+    const empSelect = document.getElementById('targetEmployee');
+    
+    empSelect.innerHTML = '<option value="all">كافة الموظفات في القسم</option>';
+
+    if (dept === 'all') {
+        empSelect.disabled = true; // إذا اختار الجميع، نقفل قائمة الموظفين
+        return;
+    }
+    
+    empSelect.disabled = false;
+    
+    try {
+        const q = query(collection(db, "users"), where("department", "==", dept));
+        const snap = await getDocs(q);
+        snap.forEach(doc => {
+            const data = doc.data();
+            if(data.role === 'trainer') {
+                empSelect.innerHTML += `<option value="${doc.id}">${data.fullName}</option>`;
+            }
+        });
+    } catch (error) {
+        console.error("خطأ في جلب الموظفات:", error);
+    }
+};
+
+// دالة إرسال التعميم المعدلة
+window.sendCircular = async () => {
+    const titleInput = document.getElementById('circularTitle');
+    const bodyInput = document.getElementById('circularBody');
+    const targetDept = document.getElementById('targetDept').value;
+    const targetEmployee = document.getElementById('targetEmployee').value;
+    
+    if (!titleInput.value || !bodyInput.value) {
+        return alert("الرجاء تعبئة عنوان ونص التعميم قبل الإرسال.");
+    }
+
+    try {
+        await addDoc(collection(db, "circulars"), {
+            title: titleInput.value,
+            content: bodyInput.value,
+            targetDept: targetDept,         // ← إضافة القسم المستهدف
+            targetEmployee: targetEmployee, // ← إضافة الموظفة المستهدفة
+            createdAt: new Date(),
+            sender: "الإدارة العليا"
+        });
+        
+        alert("تم الإرسال بنجاح! 📢");
+        titleInput.value = '';
+        bodyInput.value = '';
+        document.getElementById('targetDept').value = 'all';
+        updateCircularEmployees(); // إعادة تعيين القوائم
+    } catch (error) {
+        console.error(error);
+        alert("حدث خطأ أثناء الإرسال، تأكد من صلاحيات الفايربيس.");
+    }
+};
+
+    // 3. دالة تحديد الرسالة كمقروءة
+    window.markMessageAsRead = async (msgId) => {
+        try {
+            await updateDoc(doc(db, "trainer_messages", msgId), { status: 'read' });
+        } catch (error) {
+            console.error("خطأ في تحديث الحالة:", error);
+        }
+    };
+
+    window.loadTrainersList = async () => {
+        const tbody = document.getElementById('trainersTableBody');
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-row">جاري تحميل بيانات الموظفات...</td></tr>';
+        const filter = document.getElementById('deptFilter').value;
+
+        try {
+            const sectionsSnap = await getDocs(collection(db, "sections"));
+            const allSections = []; sectionsSnap.forEach(d => allSections.push(d.data()));
+
+            if(trainersListener) trainersListener();
+
+            trainersListener = onSnapshot(collection(db, "users"), (snap) => {
+                tbody.innerHTML = '';
+                let hasStaff = false;
+
+                snap.forEach(userDoc => {
+                    const userData = userDoc.data();
+                    
+                    if (userData.role === 'student') return;
+                    if (filter !== 'all' && userData.department !== filter) return;
+
+                    hasStaff = true;
+                    let lastLoginText = 'لم تسجل دخول بعد';
+                    let isOnline = false;
+
+                    if (userData.lastLogin) {
+                        const dateObj = userData.lastLogin.toDate ? userData.lastLogin.toDate() : new Date(userData.lastLogin);
+                        lastLoginText = dateObj.toLocaleString('ar-SA', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+                        
+                        const diffMinutes = (new Date() - dateObj) / (1000 * 60);
+                        if (diffMinutes < 30) isOnline = true;
+                    }
+
+                    const statusHtml = isOnline 
+                        ? `<span style="color:var(--success-color); font-weight:bold;">🟢 متصلة الآن</span>`
+                        : `<span style="color:var(--text-muted); font-size: 12px; line-height: 1.5;">⚪ غير متصلة<br>${lastLoginText}</span>`;
+
+                    const trainerEmail = userData.email || 'غير مسجل';
+                    
+                    let roleTitle = 'مستخدم غير محدد';
+                    if (userData.role === 'admin') roleTitle = 'إدارية';
+                    else if (userData.role === 'trainer') roleTitle = 'مدربة';
+
+                    const trainerSections = allSections.filter(s => s.trainerId === userDoc.id);
+                    let coursesHtml = trainerSections.length > 0 
+                        ? trainerSections.map(s => `<span class="course-tag">${s.courseName}</span>`).join('') 
+                        : '<span style="color:var(--text-muted); font-size:12px;">بدون شعب مسندة</span>';
+
+                    tbody.innerHTML += `
+                    <tr>
+                        <td>
+                            <strong>${userData.fullName || 'بدون اسم'}</strong><br>
+                            <small style="color: var(--admin-accent); font-weight: bold;">${roleTitle}</small>
+                        </td>
+                        <td style="font-size: 13px; color: var(--secondary-color);">${trainerEmail}</td>
+                        <td><span style="font-weight: bold;">${deptNamesAr[userData.department] || userData.department || 'عام / غير محدد'}</span></td>
+                        <td>${statusHtml}</td>
+                        <td>${coursesHtml}</td>
+                    </tr>`;
+                });
+
+                if (!hasStaff) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-row">لا توجد موظفات مسجلات في هذا القسم.</td></tr>';
+                }
+            });
+
+        } catch (error) { 
+            console.error(error); 
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-row" style="color:red;">حدث خطأ أثناء جلب البيانات.</td></tr>'; 
+        }
+    };
+
+    window.loadDepartmentLogs = async (deptKey, tableId, dataArray, deptType) => {
+        const tbody = document.getElementById(tableId);
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-row">جاري التحميل...</td></tr>';
+
+        try {
+            const q = query(collection(db, "attendance_logs"), where("department", "==", deptKey));
+            const snap = await getDocs(q);
+
+            if (snap.empty) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-row">لا توجد سجلات محفوظة لهذا القسم حتى الآن.</td></tr>';
+                return;
+            }
+
+            dataArray.length = 0; 
+            snap.forEach(doc => dataArray.push({ id: doc.id, ...doc.data() }));
+            dataArray.sort((a, b) => b.createdAt - a.createdAt);
+
+            tbody.innerHTML = '';
+            dataArray.forEach(log => {
+                const logTime = log.createdAt?.toDate ? log.createdAt.toDate().toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'}) : '---';
+                const tagColor = deptType === 'cyber' ? 'background:#fed7d7; color:#c53030' : 'background:#e2e8f0; color:#2d3748';
+                
+                tbody.innerHTML += `
+                    <tr class="${deptType}-log-row">
+                        <td><strong>${log.date}</strong> <br><small>${log.dayOfWeek}</small></td>
+                        <td>${logTime}</td>
+                        <td><span class="course-tag" style="${tagColor}">${log.course}</span></td>
+                        <td class="trainer-name"><strong>${log.trainerName}</strong></td>
+                        <td>${log.records.length} طالبة</td>
+                        <td><button class="action-btn btn-info" onclick="viewDetailedLog('${log.id}', '${deptType}')">تفاصيل 👁️</button></td>
+                    </tr>`;
+            });
+        } catch (error) { console.error(error); tbody.innerHTML = '<tr><td colspan="6" class="empty-row" style="color:red;">خطأ في جلب البيانات.</td></tr>'; }
+    };
+
+    window.filterLogs = (deptType) => {
+        const searchVal = document.getElementById(`${deptType}Search`).value.toLowerCase();
+        const rows = document.querySelectorAll(`.${deptType}-log-row`);
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(searchVal) ? '' : 'none';
+        });
+    };
+
+    window.viewDetailedLog = (id, deptType) => {
+        const dataArray = deptType === 'cyber' ? allCyberLogsData : allHRLogsData;
+        const log = dataArray.find(l => l.id === id);
+        if (!log) return;
+
+        document.getElementById('modalTitle').innerText = `تفاصيل السجل: مادة ${log.course} | المدربة: ${log.trainerName}`;
+        const tbody = document.getElementById('modalTableBody');
+        tbody.innerHTML = log.records.map(rec => {
+            let statusAr = 'غير محدد'; let color = 'var(--text-main)';
+            if(rec.status === 'present') { statusAr = 'حاضر'; color = 'var(--success-color)'; }
+            else if(rec.status === 'absent') { statusAr = 'غائب'; color = 'var(--danger-color)'; }
+            else if(rec.status === 'excused') { statusAr = 'بعذر'; color = 'var(--warning-color)'; }
+            return `<tr><td><strong>${rec.studentName}</strong></td><td style="color:${color}; font-weight:bold;">${statusAr}</td><td>${rec.note || '-'}</td></tr>`;
+        }).join('');
+
+        document.getElementById('detailsModal').style.display = 'flex';
+    };
+
+    window.closeModal = () => { document.getElementById('detailsModal').style.display = 'none'; };
+
+    window.exportLogsToExcel = (deptType, deptNameAr) => {
+        const dataArray = deptType === 'cyber' ? allCyberLogsData : allHRLogsData;
+        if (dataArray.length === 0) return alert("لا توجد بيانات للتصدير.");
+        
+        let csvContent = "التاريخ,الوقت,المقرر,المدربة,اسم الطالبة,الحالة,الملاحظات\n";
+        const rows = document.querySelectorAll(`.${deptType}-log-row`);
+        
+        rows.forEach((row, index) => {
+            if (row.style.display !== 'none') {
+                const log = dataArray[index];
+                const logTime = log.createdAt?.toDate ? log.createdAt.toDate().toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'}) : '---';
+                
+                log.records.forEach(rec => {
+                    let statusAr = 'غير محدد';
+                    if(rec.status === 'present') statusAr = 'حاضر';
+                    else if(rec.status === 'absent') statusAr = 'غائب';
+                    else if(rec.status === 'excused') statusAr = 'بعذر';
+                    csvContent += `${log.date},${logTime},${log.course},${log.trainerName},${rec.studentName},${statusAr},${rec.note || '-'}\n`;
+                });
+            }
+        });
+
+        const BOM = "\uFEFF";
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `سجل_الغياب_التفصيلي_${deptNameAr.replace(/\s+/g, '_')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    window.exportLogsToPDF = (deptType, deptNameAr) => {
+        const dataArray = deptType === 'cyber' ? allCyberLogsData : allHRLogsData;
+        if (dataArray.length === 0) return alert("لا توجد بيانات للطباعة.");
+        
+        const oldPrintArea = document.getElementById('print-area');
+        if (oldPrintArea) oldPrintArea.remove();
+
+        let printDiv = document.createElement('div');
+        printDiv.id = "print-area";
+        printDiv.style.direction = "rtl";
+        printDiv.style.padding = "30px";
+        printDiv.style.fontFamily = "'Tajawal', sans-serif";
+        
+        let html = `
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h1 style="color: #1a365d; margin: 0;">EduFlow - الإدارة العليا</h1>
+                <h2 style="color: #2d3748; margin: 10px 0;">سجل الغياب والحضور التفصيلي (قسم ${deptNameAr})</h2>
+                <p style="color: #718096; margin: 0;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-SA')}</p>
+                <hr style="border: 1px solid #e2e8f0; margin-top: 20px;">
+            </div>
+        `;
+        
+        const rows = document.querySelectorAll(`.${deptType}-log-row`);
+        rows.forEach((row, index) => {
+            if (row.style.display !== 'none') {
+                const log = dataArray[index];
+                html += `
+                    <div style="margin-bottom: 30px; page-break-inside: avoid;">
+                        <div style="background:#f7fafc; padding:12px 15px; border:1px solid #e2e8f0; border-bottom:none; border-radius:8px 8px 0 0; display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="color:#1a365d;">المقرر: ${log.course}</strong>
+                            <span>المدربة: <strong>${log.trainerName}</strong></span>
+                            <span>التاريخ: ${log.date}</span>
+                        </div>
+                        <table style="width:100%; border-collapse: collapse; text-align:right;">
+                            <thead>
+                                <tr style="background:#1a365d; color:white;">
+                                    <th style="padding:10px; border:1px solid #e2e8f0;">اسم الطالبة</th>
+                                    <th style="padding:10px; border:1px solid #e2e8f0;">الحالة</th>
+                                    <th style="padding:10px; border:1px solid #e2e8f0;">الملاحظات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                log.records.forEach(rec => {
+                    let statusAr = 'غير محدد'; let statusStyle = '';
+                    if(rec.status === 'present') { statusAr = 'حاضر'; statusStyle = 'color: #48bb78;'; }
+                    else if(rec.status === 'absent') { statusAr = 'غائب'; statusStyle = 'color: #e53e3e; font-weight: bold; background-color: #fff5f5;'; }
+                    else if(rec.status === 'excused') { statusAr = 'بعذر'; statusStyle = 'color: #ecc94b;'; }
+                    
+                    html += `<tr><td style="padding:10px; border:1px solid #e2e8f0;">${rec.studentName}</td><td style="padding:10px; border:1px solid #e2e8f0; ${statusStyle}">${statusAr}</td><td style="padding:10px; border:1px solid #e2e8f0;">${rec.note || '-'}</td></tr>`;
+                });
+                
+                html += `</tbody></table></div>`;
+            }
+        });
+        
+        printDiv.innerHTML = html;
+        document.body.appendChild(printDiv);
+        window.print();
+        setTimeout(() => printDiv.remove(), 1000);
+    };
+
+    window.handleLogout = () => signOut(auth).then(() => window.location.href = 'log in.html');
+</script>
+</body>
+</html>

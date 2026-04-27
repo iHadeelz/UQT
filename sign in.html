@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنشاء حساب جديد - معهد أم القرى للتدريب</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1a365d; 
+            --secondary-color: #2b6cb0;
+            --accent-color: #ecc94b; 
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --input-focus: #ebf8ff;
+            --danger-color: #e53e3e;
+            --success-color: #48bb78;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, #ebf8ff 0%, #f7fafc 100%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* حاوية التسجيل */
+        .register-container {
+            display: flex;
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            overflow: hidden;
+            width: 1000px;
+            max-width: 100%;
+        }
+
+        /* القسم الأيمن (النموذج) */
+        .register-form-section {
+            flex: 1.2;
+            padding: 40px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .institute-logo { max-width: 140px; margin: 0 auto 20px auto; display: block; }
+
+        .form-header { text-align: center; margin-bottom: 25px; }
+        .form-header h2 { color: var(--primary-color); font-size: 24px; font-weight: 800; margin-bottom: 5px; }
+        .form-header p { color: var(--text-muted); font-size: 14px; }
+
+        /* تنسيق الشبكة للحقول (حقلين بجانب بعض) */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group { position: relative; margin-bottom: 15px; }
+        .input-group.full-width { grid-column: span 2; }
+
+        .input-group label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--text-main); }
+        .form-control {
+            width: 100%; padding: 10px 15px; border: 2px solid var(--border-color);
+            border-radius: 8px; font-family: inherit; font-size: 14px;
+            transition: all 0.3s; background-color: #fff;
+        }
+        .form-control:focus { border-color: var(--secondary-color); background-color: var(--input-focus); outline: none; }
+        
+        select.form-control { cursor: pointer; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231a365d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: left 15px top 50%; background-size: 12px auto; }
+
+        /* رسالة الخطأ للرقم السري */
+        .error-message { color: var(--danger-color); font-size: 12px; margin-top: 5px; display: none; font-weight: bold; }
+
+        /* زر التسجيل */
+        .btn-register {
+            width: 100%; background-color: var(--primary-color); color: white; border: none;
+            padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold;
+            font-family: inherit; cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        .btn-register:hover { background-color: #122846; }
+        .btn-register:disabled { background-color: var(--text-muted); cursor: not-allowed; }
+
+        .login-link { text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-muted); }
+        .login-link a { color: var(--secondary-color); text-decoration: none; font-weight: 700; }
+        .login-link a:hover { color: var(--primary-color); text-decoration: underline; }
+
+        /* القسم الأيسر (صورة وتوجيهات) */
+        .register-image-section {
+            flex: 1; background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; padding: 40px; text-align: center; position: relative; overflow: hidden;
+        }
+        .register-image-section::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 10%, transparent 10%);
+            background-size: 30px 30px; z-index: 1;
+        }
+        .info-content { position: relative; z-index: 2; text-align: right; }
+        .info-content h3 { font-size: 24px; font-weight: 800; margin-bottom: 20px; color: var(--accent-color); }
+        .info-list { list-style: none; padding: 0; }
+        .info-list li { margin-bottom: 15px; font-size: 15px; display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; }
+        .info-list li::before { content: '✓'; color: var(--accent-color); font-weight: bold; font-size: 18px; }
+
+        /* التجاوب مع الجوال */
+        @media (max-width: 900px) {
+            .register-container { flex-direction: column; }
+            .register-image-section { display: none; }
+            .form-grid { grid-template-columns: 1fr; }
+            .input-group.full-width { grid-column: span 1; }
+            .register-form-section { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="register-container">
+        
+        <div class="register-form-section">
+            <img src="logo.png" alt="شعار المعهد" class="institute-logo" onerror="this.onerror=null; this.src='https://via.placeholder.com/140x60/1a365d/ffffff?text=معهد+أم+القرى';">
+            
+            <div class="form-header">
+                <h2>إنشاء حساب جديد</h2>
+                <p>انضمي إلى طاقم معهد أم القرى للتدريب</p>
+            </div>
+
+            <form id="registerForm">
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="fullName">الاسم الرباعي</label>
+                        <input type="text" id="fullName" class="form-control" placeholder="مثال: هديل أحمد الكبكبي" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="phoneNumber">رقم الجوال</label>
+                        <input type="tel" id="phoneNumber" class="form-control" placeholder="05XXXXXXXX" required>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="department">القسم الأكاديمي / الإداري</label>
+                        <select id="department" class="form-control" required>
+                            <option value="" disabled selected>اختر القسم...</option>
+                            <option value="cyber_security">الأمن السيبراني</option>
+                            <option value="human_resources">الموارد البشرية</option>
+                            <option value="networks">تقنية الشبكات</option>
+                            <option value="english">اللغة الإنجليزية</option>
+                            <option value="administration">الإدارة العليا</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="role">المنصب</label>
+                        <select id="role" class="form-control" required>
+                            <option value="trainer">مدربة</option>
+                            <option value="admin">إدارية</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group full-width">
+                    <label for="email">البريد الإلكتروني الأكاديمي</label>
+                    <input type="email" id="email" class="form-control" placeholder="email@uqu-training.edu.sa" required dir="ltr" style="text-align: right;">
+                </div>
+
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="password">كلمة المرور</label>
+                        <input type="password" id="password" class="form-control" placeholder="••••••••" required minlength="6">
+                    </div>
+                    <div class="input-group">
+                        <label for="confirmPassword">تأكيد كلمة المرور</label>
+                        <input type="password" id="confirmPassword" class="form-control" placeholder="••••••••" required minlength="6">
+                        <div id="passwordError" class="error-message">كلمات المرور غير متطابقة!</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-register" id="submitBtn">إنشاء الحساب</button>
+            </form>
+
+            <div class="login-link">
+                لديك حساب بالفعل؟ <a href="log in.html">تسجيل الدخول من هنا</a>
+            </div>
+        </div>
+
+        <div class="register-image-section">
+            <div class="info-content">
+                <h3>تعليمات التسجيل 📋</h3>
+                <ul class="info-list">
+                    <li>يرجى استخدام <strong>البريد الأكاديمي الرسمي</strong> لتسريع عملية تفعيل الحساب من قبل الإدارة.</li>
+                    <li>تأكدي من إدخال <strong>الاسم الرباعي</strong> باللغة العربية كما هو مسجل في الشؤون الأكاديمية.</li>
+                    <li>كلمة المرور يجب أن تتكون من 6 خانات على الأقل لضمان أمان حسابك.</li>
+                    <li>بعد التسجيل، ستتمكنين من الدخول للنظام، ولكن بعض الصلاحيات قد تحتاج إلى اعتماد نهائي من المديرة.</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+   <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+        // استيراد المصادقة
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+        // استيراد قاعدة البيانات (مهم لحفظ الاسم والقسم)
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+        // إعدادات مشروعك
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLDQ_Ud6AChKO0UOueeAfNBkdveQwqu-8",
+            authDomain: "uqt-hadeel.firebaseapp.com",
+            projectId: "uqt-hadeel",
+            storageBucket: "uqt-hadeel.firebasestorage.app",
+            messagingSenderId: "886699861255",
+            appId: "1:886699861255:web:256791f33ef0ed0aecd1a2",
+            measurementId: "G-DQ969XSNZS"
+        };
+
+        // تهيئة الفايربيس
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const registerForm = document.getElementById('registerForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const passInput = document.getElementById('password');
+        const confirmPassInput = document.getElementById('confirmPassword');
+        const passError = document.getElementById('passwordError');
+
+        // التحقق من تطابق كلمات المرور برمجياً قبل الإرسال
+        function validatePasswords() {
+            if (confirmPassInput.value !== '' && passInput.value !== confirmPassInput.value) {
+                passError.style.display = 'block';
+                submitBtn.disabled = true;
+                confirmPassInput.style.borderColor = 'var(--danger-color)';
+            } else {
+                passError.style.display = 'none';
+                submitBtn.disabled = false;
+                confirmPassInput.style.borderColor = 'var(--border-color)';
+            }
+        }
+
+        passInput.addEventListener('input', validatePasswords);
+        confirmPassInput.addEventListener('input', validatePasswords);
+
+        // التعامل مع الإرسال لفايربيس
+        registerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const fullName = document.getElementById('fullName').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const department = document.getElementById('department').value;
+            const role = document.getElementById('role').value;
+            const email = document.getElementById('email').value;
+            const password = passInput.value;
+
+            // تغيير حالة الزر
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'جاري إنشاء الحساب...';
+            submitBtn.disabled = true;
+
+            try {
+                // 1. إنشاء الحساب في Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // 2. حفظ بيانات المستخدم الإضافية في Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    fullName: fullName,
+                    email: email,
+                    phoneNumber: phoneNumber,
+                    department: department,
+                    role: role,
+                    password: password, 
+                    isActive: true, 
+                    createdAt: serverTimestamp()
+                });
+
+                // 3. التوجيه الذكي بناءً على الدور (إدارية أو مدربة)
+                if (role === 'admin') {
+                    alert('تم إنشاء الحساب بنجاح! سيتم تحويلك للوحة الإدارة.');
+                    window.location.href = 'admin.html';
+                } else {
+                    alert('تم إنشاء الحساب بنجاح! سيتم تحويلك للوحة المدربة.');
+                    window.location.href = 'trianer.html'; 
+                }
+                
+            } catch (error) {
+                const errorCode = error.code;
+                let errorMessage = 'حدث خطأ أثناء التسجيل.';
+
+                // فحص الأخطاء الشائعة
+                if (errorCode === 'auth/operation-not-allowed') {
+                    errorMessage = 'خطأ: خدمة التسجيل بالإيميل غير مفعلة في لوحة تحكم الفايربيس.';
+                } else if (errorCode === 'auth/network-request-failed') {
+                    errorMessage = 'خطأ: مشكلة في الاتصال بالإنترنت أو حظر من المتصفح.';
+                }
+
+                // عرض الخطأ التقني الصريح في التنبيه
+                alert(errorMessage + "\n\nالسبب التقني: " + error.message);
+                console.error("Full Firebase Error:", error);
+                
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

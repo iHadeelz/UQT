@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة المدربة - EduFlow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a365d; 
+            --secondary-color: #2b6cb0;
+            --accent-color: #ecc94b; 
+            --danger-color: #e53e3e;
+            --success-color: #48bb78;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --admin-accent: #805ad5; 
+        }
+
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; display: flex; height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--primary-color); color: white; padding: 20px; display: flex; flex-direction: column; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+        .sidebar h2 { text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px; }
+        .nav-links { list-style: none; padding: 0; }
+        .nav-links li { padding: 12px 15px; margin-bottom: 10px; background-color: rgba(255,255,255,0.05); border-radius: 6px; cursor: pointer; transition: 0.3s; position: relative; }
+        .nav-links li:hover, .nav-links li.active { background-color: var(--secondary-color); border-right: 4px solid var(--accent-color); }
+
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .header-profile { display: flex; justify-content: space-between; align-items: center; background-color: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .profile-info { display: flex; align-items: center; gap: 15px; }
+        .profile-pic { width: 60px; height: 60px; background-color: var(--secondary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; }
+        
+        .setup-card { background-color: var(--card-bg); padding: 25px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; border-top: 4px solid var(--primary-color); }
+        .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        .input-group label { font-size: 13px; font-weight: bold; color: var(--text-muted); }
+        .form-control { padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; font-family: inherit; font-size: 14px; background-color: #fff; transition: 0.3s; }
+        .form-control:read-only, .form-control:disabled { background-color: #e2e8f0; color: #718096; cursor: not-allowed; }
+
+        .btn { background-color: var(--secondary-color); color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: bold; transition: 0.3s; margin-left: 10px; }
+        .btn-outline { background-color: transparent; border: 2px solid var(--secondary-color); color: var(--secondary-color); }
+        .btn-success { background-color: var(--success-color); color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: inherit;}
+
+        #notificationToast { position: fixed; top: 20px; left: 20px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; z-index: 9999; min-width: 250px; animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from { transform: translateX(-110%); } to { transform: translateX(0); } }
+
+        table { width: 100%; border-collapse: collapse; background-color: var(--card-bg); border-radius: 10px; overflow: hidden; margin-bottom: 20px;}
+        th, td { padding: 15px; text-align: right; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--primary-color); color: white; }
+
+        .attendance-options { display: flex; gap: 15px; }
+        .top-stat-badge { background: var(--card-bg); padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border-color); font-weight: bold; color: var(--primary-color); }
+        
+        .notif-wrapper { position: relative; cursor: pointer; display: flex; align-items: center; }
+        .notif-icon { font-size: 24px; position: relative; }
+        .notif-badge { position: absolute; top: -5px; right: -5px; background: var(--danger-color); color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; border: 2px solid var(--card-bg); }
+        .notif-dropdown { display: none; position: absolute; top: 40px; left: 0; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 340px; z-index: 1000; overflow: hidden; cursor: default;}
+        .notif-dropdown h4 { margin: 0; padding: 12px 15px; background: var(--primary-color); color: white; font-size: 14px; text-align: right; }
+        .notif-list { max-height: 350px; overflow-y: auto; }
+        .notif-item { padding: 12px 15px; border-bottom: 1px solid var(--border-color); text-align: right; font-size: 13px; line-height: 1.5; transition: 0.3s; }
+        .notif-item:hover { background: var(--bg-color); }
+        .notif-time { display: block; font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+        
+        .warning-badge { background: var(--danger-color); color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-right: 10px; display: inline-block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        .chart-container { width: 100%; max-width: 500px; margin: 0 auto 20px auto; }
+    </style>
+</head>
+<body>
+<audio id="bellSound" preload="auto">
+        <source src="https://www.soundjay.com/buttons/sounds/button-14.mp3" type="audio/mpeg">
+    </audio>
+    <div id="notificationToast">
+        <strong id="notifTitle" style="display: block; color: var(--primary-color);">تنبيه جديد</strong>
+        <p id="notifMessage" style="margin: 5px 0 0; font-size: 14px;"></p>
+    </div>
+
+    <div class="sidebar">
+        <h2>EduFlow</h2>
+        <ul class="nav-links">
+            <li onclick="showDashboardOverview()">📊 نظرة عامة (الاحصائيات)</li>
+            <li class="active" onclick="location.reload()">📝 التحضير اليومي</li>
+            <li onclick="showMyCourses()">📚 مقرراتي (الشعب)</li>
+            <li onclick="showPastAttendances()">📅 التحضيرات السابقة</li>
+            <li onclick="showContactAdmin()" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
+                📢 التعاميم والتواصل 
+                <span id="sidebarCircularBadge" style="background: var(--danger-color); border-radius: 50%; width: 10px; height: 10px; display: none; position: absolute; left: 15px; top: 22px; box-shadow: 0 0 5px rgba(229, 62, 62, 0.8);"></span>
+            </li>
+            <li onclick="logout()" style="color: #fc8181; margin-top: 20px;">🚪 تسجيل الخروج</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header-profile">
+            <div class="profile-info">
+                <div class="profile-pic" id="profileInitials">؟</div>
+                <div class="profile-details">
+                    <h3 id="trainerName">جاري التحميل...</h3>
+                    <p id="trainerRole">يرجى الانتظار...</p>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="notif-wrapper" onclick="toggleNotifications()">
+                    <div class="notif-icon">
+                        🔔 <span id="notifBadge" class="notif-badge">0</span>
+                    </div>
+                    <div id="notifDropdown" class="notif-dropdown">
+                        <h4>📋 سجل الإشعارات والتعاميم</h4>
+                        <div id="notifList" class="notif-list">
+                            <p style="text-align:center; color:#718096; font-size:12px; padding: 20px;">جاري التحميل...</p>
+                        </div>
+                    </div>
+                </div>
+                <span class="status-badge" id="accountStatus" style="background: var(--success-color); color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">نشط</span>
+            </div>
+        </div>
+
+        <div class="setup-card" id="dashboardOverview" style="display: none; border-top: 4px solid var(--accent-color);">
+            <h3 style="text-align: center; margin-bottom: 20px;">📊 إحصائيات الحضور الكلية لمقرراتك</h3>
+            <div class="chart-container">
+                <canvas id="attendanceChart"></canvas>
+            </div>
+            <p id="chartLoadingText" style="text-align: center; color: var(--text-muted);">جاري تجميع وتحليل البيانات...</p>
+        </div>
+
+        <div class="setup-card" id="myCoursesSection" style="display: none; border-top: 4px solid var(--secondary-color);">
+            <h3>📚 جدول مقرراتي (الشعب المسجلة)</h3>
+            <table style="margin-top: 15px;">
+                <thead>
+                    <tr><th>المادة</th><th>الشعبة</th><th>التوقيت</th><th>عدد الطالبات</th><th>الإجراء</th></tr>
+                </thead>
+                <tbody id="myCoursesTable">
+                    <tr><td colspan="5" style="text-align: center;">جاري تحميل مقرراتك...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="setup-card" id="pastAttendancesSection" style="display: none; border-top: 4px solid var(--success-color);">
+            <h3>📅 سجل التحضيرات السابقة (الأرشيف)</h3>
+            <table style="margin-top: 15px;">
+                <thead>
+                    <tr><th>التاريخ</th><th>المادة</th><th>اليوم</th><th>عدد الطالبات</th><th>الإجراء</th></tr>
+                </thead>
+                <tbody id="pastAttendancesTable">
+                    <tr><td colspan="5" style="text-align: center;">جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="setup-card" id="contactAdminSection" style="display: none; border-top: 4px solid var(--admin-accent);">
+            <h3 style="color: var(--admin-accent);">📢 التعاميم والتوجيهات الإدارية</h3>
+            <div id="circularsList" style="margin-bottom: 30px; max-height: 300px; overflow-y: auto; padding: 15px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border-color);">
+                <p style="text-align: center; color: var(--text-muted);">جاري تحميل التعاميم...</p>
+            </div>
+
+            <h3 style="border-top: 1px solid var(--border-color); padding-top: 20px; color: var(--primary-color);">💬 إرسال استفسار أو شكوى للإدارة العليا</h3>
+            <div style="display: flex; flex-direction: column; gap: 15px; max-width: 600px;">
+                <select id="msgType" class="form-control" style="width: 250px;">
+                    <option value="inquiry">استفسار / طلب توضيح ❓</option>
+                    <option value="complaint">شكوى / بلاغ تقني ⚠️</option>
+                </select>
+                <textarea id="adminMsgContent" class="form-control" rows="5" placeholder="اكتب رسالتك أو استفسارك هنا وسيصل مباشرة إلى صندوق الإدارة العليا..."></textarea>
+                <button class="btn-success" onclick="sendMessageToAdmin()" style="width: 250px;">إرسال للإدارة 🚀</button>
+            </div>
+        </div>
+
+        <div class="setup-card" id="modeSelection">
+            <h3>بدء جلسة التحضير</h3>
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button class="btn" onclick="showNewSectionForm()">➕ إنشاء شعبة جديدة (لأول مرة)</button>
+                <button class="btn btn-outline" onclick="loadMySections()">📚 اختيار من القائمة المنسدلة</button>
+            </div>
+            <div id="existingSectionsDropdown" style="display: none; margin-top: 20px;">
+                <label>اختر الشعبة من قائمتك:</label>
+                <select id="sectionSelect" class="form-control" style="max-width: 400px; margin-top: 10px;" onchange="autoFillSection(this.value)">
+                    <option value="">-- جاري تحميل الشعب --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="setup-card" id="setupSection" style="display: none;">
+            <h3 id="setupTitle">إعداد بيانات المحاضرة</h3>
+            <div class="form-grid">
+                <div class="input-group"><label>اسم المادة</label><input type="text" id="courseName" class="form-control"></div>
+                <div class="input-group"><label>رقم الشعبة</label><input type="text" id="sectionCode" class="form-control"></div>
+                <div class="input-group"><label>وقت المحاضرة</label><input type="text" id="timeSlot" class="form-control" placeholder="8-10 ص"></div>
+                <div class="input-group"><label>القاعة</label><input type="text" id="classroom" class="form-control"></div>
+                <div class="input-group"><label>التاريخ</label><input type="date" id="attendanceDate" class="form-control"></div>
+                <div class="input-group">
+                    <label>اليوم</label>
+                    <select id="dayOfWeek" class="form-control">
+                        <option>الأحد</option><option>الإثنين</option><option>الثلاثاء</option><option>الأربعاء</option><option>الخميس</option>
+                    </select>
+                </div>
+            </div>
+            <div id="namesArea" class="textarea-container">
+                <label>أسماء الطالبات (طالبة في كل سطر)</label>
+                <textarea id="studentsListText" class="form-control" rows="5" placeholder="لصق الأسماء هنا..."></textarea>
+            </div>
+            <button class="btn-success" onclick="generateAttendanceList()" style="margin-top: 15px;" id="startAttendBtn">🚀 بدء التحضير</button>
+            <label id="saveSectionCheckLabel" style="margin-right:10px; display:none;"><input type="checkbox" id="saveSectionCheck" checked> حفظ في مقرراتي لسهولة التحضير لاحقاً</label>
+        </div>
+
+        <div class="attendance-section" id="attendanceSection" style="display: none;">
+            <div id="exportTools" style="display: none; gap: 10px; margin-bottom: 15px;">
+                <button class="btn btn-outline" onclick="exportToExcel()" style="border-color: #38a169; color: #38a169;">📥 تصدير Excel</button>
+                <button class="btn btn-outline" onclick="exportToPDF()" style="border-color: #e53e3e; color: #e53e3e;">🖨️ طباعة / تصدير PDF</button>
+            </div>
+            <div id="searchContainer" style="margin-bottom: 15px;">
+                <input type="text" id="searchInput" class="form-control" placeholder="🔍 ابحثي عن اسم الطالبة هنا للتصفية السريعة..." onkeyup="filterStudents()" style="width: 100%; border: 2px solid var(--secondary-color);">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: var(--primary-color);">سجل التحضير</h3>
+                <div class="top-stat-badge">المادة: <span id="displayCourse">--</span> | الطالبات: <span id="displayCount">0</span></div>
+            </div>
+            <table>
+                <thead><tr><th>م</th><th>الاسم</th><th>الحالة</th><th>ملاحظات</th></tr></thead>
+                <tbody id="studentsTable"></tbody>
+            </table>
+            <button class="btn-success" id="saveBtn" onclick="saveAttendanceToFirebase()">💾 حفظ وإرسال للإدارة</button>
+        </div>
+    </div>
+
+  <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, getDoc, query, where, doc, serverTimestamp, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLDQ_Ud6AChKO0UOueeAfNBkdveQwqu-8",
+            authDomain: "uqt-hadeel.firebaseapp.com",
+            projectId: "uqt-hadeel",
+            storageBucket: "uqt-hadeel.firebasestorage.app",
+            messagingSenderId: "886699861255",
+            appId: "1:886699861255:web:256791f33ef0ed0aecd1a2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentTrainerDept = "";
+        let isExistingMode = false;
+        let pastLogsData = []; 
+        let attendanceChartInstance = null; 
+
+        // مصفوفات النظام الموحد للإشعارات
+        let myExcuses = [];
+        let myCirculars = [];
+        let isFirstCircularLoad = true;
+
+        document.getElementById('attendanceDate').valueAsDate = new Date();
+
+        function hideAllSections() {
+            ['dashboardOverview', 'myCoursesSection', 'pastAttendancesSection', 'modeSelection', 'setupSection', 'attendanceSection', 'contactAdminSection'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await updateDoc(doc(db, "users", user.uid), { lastLogin: serverTimestamp() });
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    currentTrainerDept = data.department;
+                    document.getElementById('trainerName').innerText = data.fullName;
+                    document.getElementById('profileInitials').innerText = data.fullName.charAt(0);
+                    document.getElementById('trainerRole').innerText = `مدربة | قسم ${data.department}`;
+                    
+                    // تشغيل مستمعات الإشعارات
+                    listenForExcuses(data.fullName);
+                    listenForCirculars(data.department, user.uid);
+                }
+            } else { window.location.href = 'login.html'; }
+        });
+
+        // ------------------ نظام الإشعارات الموحد (الجرس) ------------------
+        function renderNotifications() {
+            const notifList = document.getElementById('notifList');
+            let allNotifs = [...myExcuses, ...myCirculars];
+            
+            // ترتيب حسب الأحدث
+            allNotifs.sort((a, b) => {
+                const timeA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)) : 0;
+                const timeB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)) : 0;
+                return timeB - timeA;
+            });
+
+            let listHtml = '';
+            let unreadCount = 0;
+
+            allNotifs.forEach(data => {
+                if (data.type === 'circular') {
+                    if (data.isNew) unreadCount++;
+                    listHtml += `
+                        <div class="notif-item" onclick="showContactAdmin()" style="cursor:pointer; border-right: 4px solid var(--admin-accent); background: ${data.isNew ? '#f3e8ff' : 'transparent'};">
+                            <strong>📢 تعميم إداري:</strong> <span style="color:var(--admin-accent)">${data.title}</span><br>
+                            <span class="notif-time">⌚ ${timeAgo(data.createdAt)}</span>
+                        </div>`;
+                } else {
+                    // أعذار
+                    unreadCount++; 
+                    let statusText = "⏳ قيد المراجعة";
+                    let color = "var(--text-muted)";
+                    if(data.status === "approved") { statusText = "تم القبول ✅"; color = "var(--success-color)"; }
+                    else if(data.status === "rejected") { statusText = "تم الرفض ❌"; color = "var(--danger-color)"; }
+
+                    const actionTime = data.reviewedAt || data.createdAt;
+                    listHtml += `
+                        <div class="notif-item" style="border-right: 4px solid var(--secondary-color);">
+                            <strong>${data.studentName}</strong> - <span style="color:var(--secondary-color)">${data.course}</span><br>
+                            <span style="color: ${color}; font-weight: bold; font-size: 12px;">${statusText}</span>
+                            <span class="notif-time">⌚ ${timeAgo(actionTime)}</span>
+                        </div>`;
+                }
+            });
+
+            if(allNotifs.length === 0) listHtml = '<p style="text-align:center; color:#718096; font-size:12px; padding: 20px;">لا توجد إشعارات حالياً</p>';
+            notifList.innerHTML = listHtml;
+            document.getElementById('notifBadge').innerText = unreadCount;
+            
+            // تحديث نقطة القائمة الجانبية إذا كان فيه تعميم جديد
+            const hasNewCirculars = myCirculars.some(c => c.isNew);
+            document.getElementById('sidebarCircularBadge').style.display = hasNewCirculars ? 'block' : 'none';
+        }
+
+        function listenForExcuses(trainerName) {
+            const q = query(collection(db, "excuses"), where("trainerName", "==", trainerName));
+            onSnapshot(q, (snapshot) => {
+                myExcuses = [];
+                snapshot.forEach(docSnap => myExcuses.push({id: docSnap.id, type: 'excuse', ...docSnap.data()}));
+                
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "modified") {
+                        const data = change.doc.data();
+                        if (data.status === "approved" || data.status === "rejected") {
+                            triggerBell(data.studentName, data.status, data.course);
+                        }
+                    }
+                });
+                renderNotifications();
+            });
+        }
+
+        function listenForCirculars(trainerDept, uid) {
+            onSnapshot(collection(db, "circulars"), (snapshot) => {
+                // حفظ حالة "الجديد" محلياً
+                if(!window._localCircularsState) window._localCircularsState = {};
+
+                myCirculars = [];
+                snapshot.forEach(docSnap => {
+                    const c = docSnap.data();
+                    c.id = docSnap.id;
+                    c.type = 'circular';
+                    
+                    const isForAll = c.targetDept === 'all' || !c.targetDept;
+                    const isForMyDept = c.targetDept === trainerDept && c.targetEmployee === 'all';
+                    const isSpecificallyForMe = c.targetEmployee === uid;
+
+                    if (isForAll || isForMyDept || isSpecificallyForMe) {
+                        c.isPersonal = isSpecificallyForMe;
+                        const existing = window._localCircularsState[c.id];
+                        c.isNew = existing ? existing.isNew : false;
+                        myCirculars.push(c);
+                    }
+                });
+
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added" && !isFirstCircularLoad) {
+                        const c = change.doc.data();
+                        const isForAll = c.targetDept === 'all' || !c.targetDept;
+                        const isForMyDept = c.targetDept === trainerDept && c.targetEmployee === 'all';
+                        const isSpecificallyForMe = c.targetEmployee === uid;
+
+                        if (isForAll || isForMyDept || isSpecificallyForMe) {
+                            // تعيين كجديد
+                            const found = myCirculars.find(x => x.id === change.doc.id);
+                            if(found) found.isNew = true;
+                            window._localCircularsState[change.doc.id] = { isNew: true };
+
+                            // تشغيل الصوت و Toast
+                            const bell = document.getElementById('bellSound');
+                            if (bell) { bell.currentTime = 0; bell.play().catch(e=>console.log(e)); }
+                            
+                            const toast = document.getElementById('notificationToast');
+                            document.getElementById('notifMessage').innerHTML = `<strong>📢 تعميم إداري جديد:</strong><br>${c.title}`;
+                            toast.style.borderRight = `5px solid var(--admin-accent)`;
+                            toast.style.display = "block";
+                            setTimeout(() => { toast.style.display = "none"; }, 10000);
+                        }
+                    }
+                });
+                isFirstCircularLoad = false;
+                renderNotifications();
+            });
+        }
+
+        function triggerBell(studentName, status, courseName) {
+            const bell = document.getElementById('bellSound');
+            const toast = document.getElementById('notificationToast');
+            if (bell) { bell.currentTime = 0; bell.play().catch(e => console.log("تفاعل لتفعيل الصوت")); }
+            const statusAr = status === "approved" ? "تم قبوله ✅" : "تم رفضه ❌";
+            document.getElementById('notifMessage').innerHTML = `عذر الطالبة: <strong>${studentName}</strong><br>في مادة: <strong>${courseName}</strong> ${statusAr}`;
+            toast.style.borderRight = `5px solid ${status === "approved" ? "#48bb78" : "#e53e3e"}`;
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 10000);
+        }
+// --- خدعة فك حظر الصوت في المتصفحات (النسخة المطورة) ---
+        let isAudioUnlocked = false;
+        document.body.addEventListener('click', function unlockAudio() {
+            if (!isAudioUnlocked) {
+                const bell = document.getElementById('bellSound');
+                if (bell) {
+                    bell.muted = true; // نكتم الصوت برمجياً عشان المتصفح يسمح بالتشغيل
+                    let playPromise = bell.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            bell.pause();
+                            bell.currentTime = 0;
+                            bell.muted = false; // نرجع الصوت طبيعي
+                            isAudioUnlocked = true;
+                            console.log("✅ تم تفعيل نظام الصوت بنجاح!");
+                            // نوقف مراقبة الضغطات عشان ما نثقل على المتصفح
+                            document.body.removeEventListener('click', unlockAudio);
+                        }).catch(err => console.log("في انتظار ضغطة من المستخدم..."));
+                    }
+                }
+            }
+        });
+        
+        window.toggleNotifications = () => {
+            const dropdown = document.getElementById('notifDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            
+            // عند فتح الجرس، يتم قراءة التعاميم وإخفاء النقطة الحمراء
+            if (dropdown.style.display === 'block') {
+                myCirculars.forEach(c => {
+                    c.isNew = false;
+                    window._localCircularsState[c.id] = { isNew: false };
+                });
+                renderNotifications();
+            }
+        };
+
+        function timeAgo(timestamp) {
+            if (!timestamp) return "غير معروف";
+            const diffInSeconds = Math.floor((new Date() - (timestamp.toDate ? timestamp.toDate() : new Date(timestamp))) / 1000);
+            if (diffInSeconds < 60) return "الآن";
+            if (diffInSeconds < 3600) return `منذ ${Math.floor(diffInSeconds / 60)} دقيقة`;
+            if (diffInSeconds < 86400) return `منذ ${Math.floor(diffInSeconds / 3600)} ساعة`;
+            return `منذ ${Math.floor(diffInSeconds / 86400)} يوم`;
+        }
+
+        // ------------------ التحليل البصري (Chart.js) ------------------
+        window.showDashboardOverview = async () => {
+            hideAllSections();
+            document.getElementById('dashboardOverview').style.display = 'block';
+            document.getElementById('chartLoadingText').style.display = 'block';
+
+            try {
+                const trainerName = document.getElementById('trainerName').innerText;
+                const q = query(collection(db, "attendance_logs"), where("trainerName", "==", trainerName));
+                const snap = await getDocs(q);
+                
+                let totalPresent = 0, totalAbsent = 0, totalExcused = 0;
+
+                snap.forEach(doc => {
+                    const records = doc.data().records;
+                    records.forEach(r => {
+                        if (r.status === 'present') totalPresent++;
+                        else if (r.status === 'absent') totalAbsent++;
+                        else if (r.status === 'excused') totalExcused++;
+                    });
+                });
+
+                document.getElementById('chartLoadingText').style.display = 'none';
+
+                const ctx = document.getElementById('attendanceChart').getContext('2d');
+                if (attendanceChartInstance) attendanceChartInstance.destroy(); 
+
+                if(totalPresent === 0 && totalAbsent === 0 && totalExcused === 0) {
+                    document.getElementById('chartLoadingText').innerText = "لا توجد بيانات كافية لرسم الإحصائيات.";
+                    document.getElementById('chartLoadingText').style.display = 'block';
+                    return;
+                }
+
+                attendanceChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['حضور', 'غياب', 'بعذر'],
+                        datasets: [{
+                            data: [totalPresent, totalAbsent, totalExcused],
+                            backgroundColor: ['#48bb78', '#e53e3e', '#ecc94b'],
+                            borderWidth: 2,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { family: 'Tajawal', size: 14 } } }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('chartLoadingText').innerText = "حدث خطأ أثناء تحميل الإحصائيات.";
+            }
+        };
+
+        // ------------------ مقرراتي ------------------
+        window.showMyCourses = async () => {
+            hideAllSections();
+            const section = document.getElementById('myCoursesSection');
+            section.style.display = 'block';
+            const q = query(collection(db, "sections"), where("trainerId", "==", auth.currentUser.uid));
+            const snap = await getDocs(q);
+            const tbody = document.getElementById('myCoursesTable');
+            tbody.innerHTML = '';
+            
+            if (snap.empty) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد شعب مسجلة.</td></tr>';
+                return;
+            }
+            snap.forEach(d => {
+                const data = d.data();
+                tbody.innerHTML += `
+                <tr>
+                    <td><strong>${data.courseName}</strong></td>
+                    <td>${data.sectionCode || '---'}</td>
+                    <td>${data.timeSlot || '---'}</td>
+                    <td>${data.students.length} طالبة</td>
+                    <td>
+                        <button class="btn btn-outline" onclick="autoFillSection('${d.id}')">التحضير الآن</button>
+                        <button class="btn btn-outline" style="padding: 5px 10px; font-size: 12px; color: var(--danger-color); border-color: var(--danger-color);" onclick="deleteCourse('${d.id}')">حذف 🗑️</button>
+                    </td>
+                </tr>`;
+            });
+        };
+
+        window.deleteCourse = async (id) => {
+            if (confirm("هل أنتِ متأكدة من حذف هذه الشعبة بالكامل؟ ⚠️")) {
+                try { await deleteDoc(doc(db, "sections", id)); alert("تم حذف الشعبة بنجاح."); showMyCourses(); } 
+                catch (error) { alert("حدث خطأ أثناء الحذف."); }
+            }
+        };
+
+        // ------------------ الأرشيف (التحضيرات السابقة) ------------------
+        window.showPastAttendances = async () => {
+            hideAllSections();
+            const section = document.getElementById('pastAttendancesSection');
+            section.style.display = 'block';
+            const tbody = document.getElementById('pastAttendancesTable');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">جاري التحميل...</td></tr>';
+
+            try {
+                const trainerName = document.getElementById('trainerName').innerText;
+                const q = query(collection(db, "attendance_logs"), where("trainerName", "==", trainerName));
+                const snap = await getDocs(q);
+                
+                pastLogsData = [];
+                snap.forEach(doc => pastLogsData.push({ id: doc.id, ...doc.data() }));
+                pastLogsData.sort((a, b) => b.createdAt - a.createdAt);
+
+                if (pastLogsData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد تحضيرات سابقة.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                pastLogsData.forEach(log => {
+                    tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${log.date}</strong></td>
+                        <td>${log.course}</td>
+                        <td>${log.dayOfWeek}</td>
+                        <td>${log.records.length}</td>
+                        <td>
+                            <button class="btn btn-outline" style="padding: 5px 10px; font-size: 12px;" onclick="viewPastAttendance('${log.id}')">عرض السجل 👁️</button>
+                        </td>
+                    </tr>`;
+                });
+            } catch (error) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">حدث خطأ أثناء جلب البيانات.</td></tr>';
+            }
+        };
+
+        window.viewPastAttendance = (logId) => {
+            const log = pastLogsData.find(l => l.id === logId);
+            if (!log) return;
+
+            window.currentStudents = log.records.map((r, i) => ({ id: i + 1, name: r.studentName }));
+            
+            document.getElementById('displayCourse').innerText = log.course;
+            document.getElementById('displayCount').innerText = log.records.length;
+            document.getElementById('attendanceDate').value = log.date;
+
+            const tbody = document.getElementById('studentsTable');
+            tbody.innerHTML = log.records.map((rec, i) => {
+                const isPresent = rec.status === 'present' ? 'checked' : '';
+                const isAbsent = rec.status === 'absent' ? 'checked' : '';
+                const isExcused = rec.status === 'excused' ? 'checked' : '';
+                
+                return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${rec.studentName}</strong></td>
+                    <td>
+                        <div class="attendance-options">
+                            <label style="${isPresent ? 'color:var(--success-color); font-weight:bold;' : 'color:#ccc;'}"><input type="radio" name="st_${i+1}" value="present" ${isPresent} disabled> حضر</label>
+                            <label style="${isAbsent ? 'color:var(--danger-color); font-weight:bold;' : 'color:#ccc;'}"><input type="radio" name="st_${i+1}" value="absent" ${isAbsent} disabled> غياب</label>
+                            <label style="${isExcused ? 'color:var(--accent-color); font-weight:bold;' : 'color:#ccc;'}"><input type="radio" name="st_${i+1}" value="excused" ${isExcused} disabled> بعذر</label>
+                        </div>
+                    </td>
+                    <td><input type="text" style="width:100%" value="${rec.note || ''}" disabled class="form-control"></td>
+                </tr>`;
+            }).join('');
+
+            hideAllSections();
+            document.getElementById('attendanceSection').style.display = 'block';
+            document.getElementById('saveBtn').style.display = 'none'; 
+            document.getElementById('exportTools').style.display = 'flex';
+        };
+
+        // ------------------ التحضير الذكي ونظام الإنذار ------------------
+        window.showNewSectionForm = () => {
+            isExistingMode = false;
+            ['courseName', 'sectionCode', 'timeSlot', 'classroom'].forEach(id => {
+                const el = document.getElementById(id);
+                el.value = ''; el.readOnly = false;
+            });
+            document.getElementById('dayOfWeek').disabled = false;
+            document.getElementById('studentsListText').value = '';
+
+            hideAllSections();
+            document.getElementById('modeSelection').style.display = 'block';
+            document.getElementById('setupSection').style.display = 'block';
+            document.getElementById('namesArea').style.display = 'block';
+            document.getElementById('saveSectionCheckLabel').style.display = 'inline';
+        };
+
+        window.loadMySections = async () => {
+            document.getElementById('existingSectionsDropdown').style.display = 'block';
+            const q = query(collection(db, "sections"), where("trainerId", "==", auth.currentUser.uid));
+            const snap = await getDocs(q);
+            const select = document.getElementById('sectionSelect');
+            select.innerHTML = '<option value="">-- اختر مادة --</option>';
+            snap.forEach(d => { select.innerHTML += `<option value="${d.id}">${d.data().courseName}</option>`; });
+        };
+
+        window.autoFillSection = async (id) => {
+            if(!id) return;
+            isExistingMode = true;
+            const d = await getDoc(doc(db, "sections", id));
+            const data = d.data();
+            
+            document.getElementById('courseName').value = data.courseName || '';
+            document.getElementById('sectionCode').value = data.sectionCode || '';
+            document.getElementById('timeSlot').value = data.timeSlot || '';
+            document.getElementById('classroom').value = data.classroom || '';
+            
+            ['courseName', 'sectionCode', 'timeSlot', 'classroom'].forEach(inputId => { document.getElementById(inputId).readOnly = true; });
+            if(data.dayOfWeek) document.getElementById('dayOfWeek').value = data.dayOfWeek;
+            document.getElementById('dayOfWeek').disabled = true;
+
+            document.getElementById('studentsListText').value = data.students.join('\n');
+            hideAllSections();
+            document.getElementById('setupSection').style.display = 'block';
+            document.getElementById('namesArea').style.display = 'none';
+        };
+
+        window.generateAttendanceList = async () => {
+            const course = document.getElementById('courseName').value;
+            const raw = document.getElementById('studentsListText').value;
+            if(!course || (!raw && !isExistingMode)) return alert("البيانات ناقصة");
+
+            const startBtn = document.getElementById('startAttendBtn');
+            startBtn.innerText = "⏳ جاري تحليل بيانات الطالبات...";
+            startBtn.disabled = true;
+
+            if (!isExistingMode && document.getElementById('saveSectionCheck').checked) {
+                const studentsArray = raw.split('\n').filter(n => n.trim().length > 2);
+                await addDoc(collection(db, "sections"), {
+                    courseName: course, sectionCode: document.getElementById('sectionCode').value,
+                    timeSlot: document.getElementById('timeSlot').value, classroom: document.getElementById('classroom').value,
+                    dayOfWeek: document.getElementById('dayOfWeek').value,
+                    trainerId: auth.currentUser.uid, department: currentTrainerDept, students: studentsArray, createdAt: serverTimestamp()
+                });
+            }
+
+            const names = raw.split('\n').filter(n => n.trim().length > 2);
+            window.currentStudents = names.map((name, i) => ({ id: i+1, name: name.trim() }));
+            
+            let absenceCounts = {};
+            try {
+                const qLogs = query(collection(db, "attendance_logs"), where("course", "==", course));
+                const logsSnap = await getDocs(qLogs);
+                logsSnap.forEach(doc => {
+                    const data = doc.data();
+                    data.records.forEach(rec => {
+                        if (rec.status === 'absent') {
+                            absenceCounts[rec.studentName] = (absenceCounts[rec.studentName] || 0) + 1;
+                        }
+                    });
+                });
+            } catch (err) { console.error("Error fetching absences", err); }
+
+            document.getElementById('displayCourse').innerText = course;
+            document.getElementById('displayCount').innerText = window.currentStudents.length;
+            
+            hideAllSections();
+            document.getElementById('attendanceSection').style.display = 'block';
+            
+            document.getElementById('saveBtn').style.display = 'block';
+            document.getElementById('saveBtn').disabled = false;
+            document.getElementById('saveBtn').innerText = "💾 حفظ وإرسال للإدارة";
+            document.getElementById('exportTools').style.display = 'none';
+
+            const tbody = document.getElementById('studentsTable');
+            tbody.innerHTML = window.currentStudents.map(s => {
+                const pastAbsences = absenceCounts[s.name] || 0;
+                const warningBadge = pastAbsences >= 3 ? `<span class="warning-badge">⚠️ إنذار: ${pastAbsences} غيابات</span>` : '';
+
+                return `
+                <tr>
+                    <td>${s.id}</td>
+                    <td><strong>${s.name}</strong> ${warningBadge}</td>
+                    <td><div class="attendance-options">
+                        <label><input type="radio" name="st_${s.id}" value="present" checked> حضر</label>
+                        <label><input type="radio" name="st_${s.id}" value="absent"> غياب</label>
+                        <label><input type="radio" name="st_${s.id}" value="excused"> بعذر</label>
+                    </div></td>
+                    <td><input type="text" id="note_${s.id}" style="width:100%" placeholder="ملاحظة" class="form-control"></td>
+                </tr>`;
+            }).join('');
+
+            startBtn.innerText = "🚀 بدء التحضير";
+            startBtn.disabled = false;
+        };
+
+        // ------------------ حفظ السجل والتصدير ------------------
+        window.saveAttendanceToFirebase = async () => {
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = "⏳ جاري الإرسال...";
+
+            try {
+                const dayEl = document.getElementById('dayOfWeek');
+                const logs = {
+                    course: document.getElementById('courseName').value, 
+                    department: currentTrainerDept, 
+                    date: document.getElementById('attendanceDate').value, 
+                    dayOfWeek: dayEl.options[dayEl.selectedIndex].text, 
+                    trainerName: document.getElementById('trainerName').innerText,
+                    records: window.currentStudents.map(s => ({
+                        studentName: s.name, 
+                        status: document.querySelector(`input[name="st_${s.id}"]:checked`).value,
+                        note: document.getElementById(`note_${s.id}`).value || "لا توجد ملاحظة"
+                    })), 
+                    createdAt: serverTimestamp()
+                };
+
+                await addDoc(collection(db, "attendance_logs"), logs);
+
+                const excusePromises = logs.records
+                    .filter(rec => rec.status === 'excused')
+                    .map(rec => addDoc(collection(db, "excuses"), {
+                        studentName: rec.studentName, course: logs.course, department: currentTrainerDept,
+                        trainerName: logs.trainerName, reason: rec.note, status: 'pending', date: logs.date,
+                        dayOfWeek: logs.dayOfWeek, createdAt: serverTimestamp()
+                    }));
+
+                if (excusePromises.length > 0) { await Promise.all(excusePromises); }
+
+                alert("تم الحفظ بنجاح! ✨\nيمكنك الآن تصدير السجل أو طباعته.");
+                
+                document.getElementById('exportTools').style.display = 'flex';
+                saveBtn.style.display = 'none';
+
+                window.currentStudents.forEach(s => {
+                    document.querySelectorAll(`input[name="st_${s.id}"]`).forEach(radio => radio.disabled = true);
+                    document.getElementById(`note_${s.id}`).readOnly = true;
+                });
+                
+            } catch (error) {
+                console.error("Error saving attendance:", error);
+                alert("حدث خطأ أثناء الحفظ، يرجى المحاولة مرة أخرى.");
+                saveBtn.disabled = false;
+                saveBtn.innerText = "💾 حفظ وإرسال للإدارة";
+            }
+        };
+
+        window.filterStudents = () => {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.getElementById('studentsTable').getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const nameCol = rows[i].getElementsByTagName('td')[1]; 
+                if (nameCol) {
+                    const name = nameCol.textContent || nameCol.innerText;
+                    rows[i].style.display = name.toLowerCase().indexOf(input) > -1 ? "" : "none";
+                }
+            }
+        };
+
+        window.exportToExcel = () => {
+            if (!window.currentStudents || window.currentStudents.length === 0) return alert("لا توجد بيانات للتصدير!");
+            const course = document.getElementById('displayCourse').innerText;
+            const date = document.getElementById('attendanceDate').value;
+            let csvContent = "م,اسم الطالبة,الحالة,الملاحظات\n";
+            
+            window.currentStudents.forEach(s => {
+                const statusRadio = document.querySelector(`input[name="st_${s.id}"]:checked`);
+                const status = statusRadio ? (statusRadio.value === 'present' ? 'حاضر' : (statusRadio.value === 'absent' ? 'غائب' : 'بعذر')) : 'غير محدد';
+                const note = document.getElementById(`note_${s.id}`).value || "لا يوجد";
+                csvContent += `${s.id},${s.name},${status},${note}\n`;
+            });
+
+            const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `تحضير_${course}_${date}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        window.exportToPDF = () => {
+            const elementsToHide = [
+                document.querySelector('.sidebar'),
+                document.querySelector('.header-profile'),
+                document.getElementById('exportTools'),
+                document.getElementById('searchContainer'),
+                document.getElementById('saveBtn')
+            ];
+            elementsToHide.forEach(el => { if(el) el.style.display = 'none'; });
+            window.print();
+            elementsToHide.forEach(el => { if(el) el.style.display = ''; });
+            document.querySelector('.sidebar').style.display = 'flex';
+        };
+
+        // ------------------ قسم التواصل والتعاميم ------------------
+        window.showContactAdmin = () => {
+            hideAllSections();
+            document.getElementById('contactAdminSection').style.display = 'block';
+            
+            // عند الدخول لهذه الصفحة، نقوم بتصفير الإشعارات
+            myCirculars.forEach(c => {
+                c.isNew = false;
+                window._localCircularsState[c.id] = { isNew: false };
+            });
+            renderNotifications(); // يعيد حساب العداد بعد التصفير
+            
+            const list = document.getElementById('circularsList');
+            if (myCirculars.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:var(--text-muted)">لا توجد تعاميم إدارية تخصك حالياً.</p>';
+                return;
+            }
+
+            let html = '';
+            let sorted = [...myCirculars].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)); 
+            
+            sorted.forEach(c => {
+                const dateStr = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('ar-SA') : 'مؤخراً';
+                const personalBadge = c.isPersonal ? `<span style="background: var(--danger-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 10px;">رسالة خاصة لكِ 🎯</span>` : '';
+                const borderStyle = c.isPersonal ? 'border-right: 4px solid var(--danger-color);' : 'border-right: 4px solid var(--admin-accent);';
+
+                html += `
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; ${borderStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <h4 style="margin: 0 0 8px 0; color: var(--primary-color); font-size: 16px;">${c.title} ${personalBadge}</h4>
+                    <p style="margin: 0 0 8px 0; font-size: 14px; line-height: 1.6; color: var(--text-main);">${c.content}</p>
+                    <small style="color: var(--text-muted); font-size: 11px;">📅 ${dateStr} | 👤 المرسل: ${c.sender}</small>
+                </div>`;
+            });
+            list.innerHTML = html;
+        };
+
+        window.sendMessageToAdmin = async () => {
+            const content = document.getElementById('adminMsgContent').value;
+            const type = document.getElementById('msgType').value;
+            const trainerName = document.getElementById('trainerName').innerText;
+
+            if (!content.trim()) return alert("الرجاء كتابة نص الرسالة أولاً.");
+
+            try {
+                await addDoc(collection(db, "trainer_messages"), {
+                    senderName: trainerName,
+                    senderId: auth.currentUser.uid,
+                    department: currentTrainerDept,
+                    type: type,
+                    content: content,
+                    status: 'unread',
+                    createdAt: serverTimestamp()
+                });
+                alert("تم إرسال رسالتك للإدارة بنجاح! ✅");
+                document.getElementById('adminMsgContent').value = '';
+            } catch (e) {
+                console.error("خطأ في الإرسال:", e);
+                alert("حدث خطأ أثناء إرسال الرسالة.");
+            }
+        };
+
+        window.logout = () => signOut(auth).then(() => window.location.href = 'log in.html');
+    </script>
+</body>
+</html>
