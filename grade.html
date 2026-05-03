@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة مشاركة الطالبات - EduFlow</title>
+    
+    <style>
+        :root {
+            --primary: #1a365d; --success: #48bb78; --danger: #e53e3e;
+            --bg: #f7fafc; --text: #2d3748; --admin-accent: #805ad5;
+        }
+        body { font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-top: 5px solid var(--admin-accent); }
+        .section { display: none; text-align: center; } .section.active { display: block; }
+        
+        .inline-form { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .inline-form input { flex: 1; min-width: 150px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        .inline-form button { margin: 0; white-space: nowrap; }
+
+        textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-family: inherit; height: 150px; resize: vertical; }
+        button { background-color: var(--primary); color: white; border: none; padding: 12px 25px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-family: inherit; font-weight: bold; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        button.success { background-color: var(--success); } button.danger { background-color: var(--danger); } button.secondary { background-color: #718096; }
+        
+        .roulette-box { background: var(--bg); padding: 50px; border-radius: 10px; margin: 20px 0; border: 3px dashed var(--admin-accent); box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
+        .roulette-box h3 { font-size: 2.5em; margin: 0; color: var(--primary); }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; border-bottom: 1px solid #e2e8f0; text-align: center; }
+        th { background-color: #f8fafc; color: var(--text); font-weight: bold; }
+        tr:hover { background-color: #f1f5f9; }
+        
+        .action-buttons { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+
+        .lesson-meta { display: flex; justify-content: center; gap: 20px; background: #edf2f7; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: var(--text); font-weight: bold; }
+
+        /* تنسيقات الأرشيف والنافذة المنبثقة */
+        .btn-view { background-color: var(--admin-accent); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-family: inherit; font-size: 14px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative; }
+        .close-btn { position: absolute; top: 15px; left: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #a0aec0; padding: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- 1. قسم الإعدادات -->
+        <div id="setup-section" class="section active">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: var(--primary); margin: 0;">⚙️ إعداد درس المشاركة التفاعلية</h2>
+                <button id="open-archive-btn" class="secondary" style="background: var(--admin-accent);">📂 عرض الأرشيف</button>
+            </div>
+            
+            <div class="inline-form">
+                <input type="text" id="subject-name" placeholder="اسم المادة (مثال: أمن شبكات)">
+                <input type="text" id="section-name" placeholder="اسم الشعبة (مثال: 101)">
+                <input type="text" id="lesson-title" placeholder="عنوان الدرس">
+                <button id="start-btn" style="background: var(--success);">بدء الدرس 🚀</button>
+            </div>
+
+            <textarea id="students-list" placeholder="انسخي أسماء الطالبات هنا من الإكسل (كل اسم في سطر)"></textarea>
+        </div>
+
+        <!-- 2. قسم العجلة / الروليت -->
+        <div id="wheel-section" class="section">
+            <div class="lesson-meta" id="lesson-meta-info"></div>
+            
+            <div class="roulette-box">
+                <h3 id="selected-student">اضغطي للاختيار...</h3>
+            </div>
+            
+            <button id="spin-btn">🎲 اختيار طالبة عشوائياً</button>
+            
+            <div id="action-buttons" class="action-buttons" style="display: none;">
+                <button id="correct-btn" class="success">✔️ إجابة صحيحة (+1)</button>
+                <button id="wrong-btn" class="danger">❌ إجابة خاطئة</button>
+            </div>
+            
+            <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e2e8f0;">
+            <button id="finish-btn" class="secondary">🏆 إنهاء الدرس وعرض النتائج</button>
+        </div>
+
+        <!-- 3. قسم لوحة الصدارة التراكمية -->
+        <div id="leaderboard-section" class="section">
+            <h2 style="color: var(--primary);">🌟 لوحة الشرف التراكمية (مجموع كل الأيام)</h2>
+            <div class="lesson-meta" id="leaderboard-meta-info"></div>
+            
+            <table id="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>المركز</th>
+                        <th>اسم الطالبة</th>
+                        <th>إجمالي النقاط</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- تعبأ برمجياً -->
+                </tbody>
+            </table>
+            <br>
+            <button onclick="location.reload()" class="secondary">🔄 بدء درس جديد</button>
+        </div>
+
+        <!-- 4. قسم الأرشيف -->
+        <div id="archive-section" class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+                <h2 style="color: var(--primary); margin: 0;">📚 أرشيف سجلات المشاركة السابقة</h2>
+                <button id="back-to-setup-btn" class="secondary">⬅️ العودة للإعدادات</button>
+            </div>
+
+            <table id="archive-table">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>المادة والشعبة</th>
+                        <th>عنوان الدرس</th>
+                        <th>الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="4" style="color: #a0aec0;">جاري تحميل الأرشيف...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- النافذة المنبثقة (Modal) لعرض نتائج الأرشيف اليومي -->
+    <div class="modal-overlay" id="results-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">✖</button>
+            <h3 id="modal-title" style="color: var(--primary); margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">نتائج الدرس اليومية</h3>
+            <table style="width: 100%; margin-top: 10px;">
+                <thead>
+                    <tr style="background-color: #edf2f7;">
+                        <th>المركز</th>
+                        <th>اسم الطالبة</th>
+                        <th>نقاط اليوم فقط</th>
+                    </tr>
+                </thead>
+                <tbody id="modal-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- قسم المنطق البرمجي (JavaScript) -->
+    <script type="module">
+        // استدعاء مكتبة increment لزيادة النقاط بشكل احترافي وآمن
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, getDocs, increment } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCLDQ_Ud6AChKO0UOueeAfNBkdveQwqu-8",
+            authDomain: "uqt-hadeel.firebaseapp.com",
+            projectId: "uqt-hadeel",
+            storageBucket: "uqt-hadeel.firebasestorage.app",
+            messagingSenderId: "886699861255",
+            appId: "1:886699861255:web:256791f33ef0ed0aecd1a2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let students = [];
+        let currentSubject = "";
+        let currentSection = "";
+        let currentLessonTitle = "";
+        let currentStudent = null;
+        let currentDateStr = "";
+        let currentDayName = "";
+        let currentDocId = ""; // لدرس اليوم
+        let totalsDocId = "";  // للمجموع التراكمي
+        
+        window.allLessonsData = {}; 
+
+        const setupSection = document.getElementById('setup-section');
+        const wheelSection = document.getElementById('wheel-section');
+        const leaderboardSection = document.getElementById('leaderboard-section');
+        const archiveSection = document.getElementById('archive-section');
+
+        /* --- 1. منطق بدء الدرس وتسيير الروليت --- */
+        document.getElementById('start-btn').addEventListener('click', async () => {
+            currentSubject = document.getElementById('subject-name').value.trim();
+            currentSection = document.getElementById('section-name').value.trim();
+            currentLessonTitle = document.getElementById('lesson-title').value.trim();
+            const studentsText = document.getElementById('students-list').value.trim();
+
+            if (!currentSubject || !currentSection || !studentsText) {
+                alert("الرجاء تعبئة جميع الحقول وإدخال أسماء الطالبات.");
+                return;
+            }
+
+            students = studentsText.split('\n').map(name => name.trim()).filter(name => name !== "");
+
+            const dateObj = new Date();
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            
+            currentDateStr = `${year}-${month}-${day}`;
+            currentDayName = new Intl.DateTimeFormat('ar-SA', { weekday: 'long' }).format(dateObj);
+            
+            // مُعرف درس اليوم (لأرشيف اليوم فقط)
+            currentDocId = `${currentSubject}_${currentSection}_${currentDateStr}`;
+            // مُعرف السجل التراكمي (يجمع نقاط كل الأيام لهذه الشعبة)
+            totalsDocId = `${currentSubject}_${currentSection}_TOTALS`;
+
+            try {
+                // 1. إنشاء/تحديث ملف درس اليوم
+                const lessonRef = doc(db, "participation_scores", currentDocId);
+                await setDoc(lessonRef, {
+                    subject: currentSubject,
+                    section: currentSection,
+                    lessonTitle: currentLessonTitle,
+                    date: currentDateStr,
+                    dayOfWeek: currentDayName,
+                    isTotalDoc: false, // لتمييزه عن ملف المجاميع
+                    createdAt: new Date()
+                }, { merge: true });
+
+                // 2. إنشاء/تحديث ملف المجاميع الكلية (TOTALS)
+                const totalsRef = doc(db, "participation_scores", totalsDocId);
+                await setDoc(totalsRef, {
+                    subject: currentSubject,
+                    section: currentSection,
+                    isTotalDoc: true // علامة لملف المجاميع
+                }, { merge: true });
+
+                // 3. التأكد من وجود الطالبات في كلا الملفين (اليومي والتراكمي)
+                for (let student of students) {
+                    // السجل اليومي (يبدأ من 0 كل يوم)
+                    const dailyStudentRef = doc(db, "participation_scores", currentDocId, "students", student);
+                    const dSnap = await getDoc(dailyStudentRef);
+                    if (!dSnap.exists()) await setDoc(dailyStudentRef, { name: student, points: 0 });
+
+                    // السجل التراكمي (إذا لم تكن موجودة نعطيها 0، وإلا نحتفظ بنقاطها القديمة)
+                    const totalStudentRef = doc(db, "participation_scores", totalsDocId, "students", student);
+                    const tSnap = await getDoc(totalStudentRef);
+                    if (!tSnap.exists()) await setDoc(totalStudentRef, { name: student, totalPoints: 0 });
+                }
+                
+                const metaText = `<span>📅 ${currentDayName} (${currentDateStr})</span> | <span>📚 ${currentSubject} - ${currentSection}</span>`;
+                document.getElementById('lesson-meta-info').innerHTML = metaText + ` | <span>📝 ${currentLessonTitle}</span>`;
+                document.getElementById('leaderboard-meta-info').innerHTML = metaText;
+                
+                setupSection.classList.remove('active');
+                wheelSection.classList.add('active');
+                
+            } catch (error) {
+                console.error("خطأ:", error);
+                alert("حدث خطأ، تأكدي من الاتصال: \n" + error.message);
+            }
+        });
+
+        document.getElementById('spin-btn').addEventListener('click', () => {
+            const display = document.getElementById('selected-student');
+            const actionButtons = document.getElementById('action-buttons');
+            const spinBtn = document.getElementById('spin-btn');
+            
+            actionButtons.style.display = 'none';
+            spinBtn.disabled = true;
+
+            let time = 0;
+            const interval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * students.length);
+                display.innerText = students[randomIndex];
+                time += 50;
+
+                if (time >= 2000) {
+                    clearInterval(interval);
+                    currentStudent = students[Math.floor(Math.random() * students.length)];
+                    display.innerText = `🎉 ${currentStudent} 🎉`;
+                    actionButtons.style.display = 'flex';
+                    spinBtn.disabled = false;
+                }
+            }, 50);
+        });
+
+        /* إضافة نقطة للطالبة (في السجلين اليومي والتراكمي معاً) */
+        document.getElementById('correct-btn').addEventListener('click', async () => {
+            if (!currentStudent) return;
+            try {
+                // إضافة +1 في سجل درس اليوم
+                const dailyStudentRef = doc(db, "participation_scores", currentDocId, "students", currentStudent);
+                await updateDoc(dailyStudentRef, { points: increment(1) });
+
+                // إضافة +1 في السجل التراكمي (TOTALS)
+                const totalStudentRef = doc(db, "participation_scores", totalsDocId, "students", currentStudent);
+                await updateDoc(totalStudentRef, { totalPoints: increment(1) });
+                
+                alert(`ممتاز! تم إضافة النقطة بنجاح للطالبة: ${currentStudent} 🌟`);
+            } catch(error) {
+                console.error("خطأ:", error);
+            }
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('selected-student').innerText = "اضغطي للاختيار...";
+        });
+
+        document.getElementById('wrong-btn').addEventListener('click', () => {
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('selected-student').innerText = "اضغطي للاختيار...";
+        });
+
+        /* إنهاء الدرس وعرض (المجموع التراكمي الأعلى) */
+        document.getElementById('finish-btn').addEventListener('click', async () => {
+            wheelSection.classList.remove('active');
+            leaderboardSection.classList.add('active');
+
+            let cumulativeData = []; // البيانات التراكمية للعرض
+            let dailyData = [];      // البيانات اليومية للأرشيف
+            
+            try {
+                // 1. جلب الترتيب التراكمي للعرض في لوحة الشرف
+                const totalsColRef = collection(db, "participation_scores", totalsDocId, "students");
+                const tSnap = await getDocs(totalsColRef); 
+                tSnap.forEach(doc => { cumulativeData.push(doc.data()); });
+                cumulativeData.sort((a, b) => b.totalPoints - a.totalPoints); // ترتيب التراكمي
+
+                // 2. جلب ترتيب اليوم فقط لحفظه في أرشيف اليوم
+                const dailyColRef = collection(db, "participation_scores", currentDocId, "students");
+                const dSnap = await getDocs(dailyColRef);
+                dSnap.forEach(doc => { dailyData.push(doc.data()); });
+                dailyData.sort((a, b) => b.points - a.points); // ترتيب اليومي
+                
+                // حفظ الترتيب اليومي في وثيقة الدرس
+                const lessonRef = doc(db, "participation_scores", currentDocId);
+                await updateDoc(lessonRef, { finalLeaderboard: dailyData });
+                
+            } catch(error) {
+                console.error("خطأ:", error);
+            }
+
+            // عرض ترتيب لوحة الشرف (النقاط التراكمية)
+            const tbody = document.querySelector('#leaderboard-table tbody');
+            tbody.innerHTML = '';
+
+            cumulativeData.forEach((student, index) => {
+                const tr = document.createElement('tr');
+                if(index === 0) tr.style.backgroundColor = '#faf5ff'; 
+                if(index === 1) tr.style.backgroundColor = '#f0fff4'; 
+                if(index === 2) tr.style.backgroundColor = '#fffaf0'; 
+                
+                let rankTrophy = (index + 1).toString();
+                if(index === 0) rankTrophy = "🥇 1";
+                if(index === 1) rankTrophy = "🥈 2";
+                if(index === 2) rankTrophy = "🥉 3";
+                
+                tr.innerHTML = `
+                    <td style="font-weight: bold;">${rankTrophy}</td>
+                    <td><strong>${student.name}</strong></td>
+                    <td style="color: var(--admin-accent); font-weight: bold; font-size: 1.2em;">${student.totalPoints} نقطة</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+
+        /* --- 2. منطق الأرشيف واستدعاء البيانات السابقة --- */
+        const loadArchive = async () => {
+            const tbody = document.querySelector('#archive-table tbody');
+            tbody.innerHTML = '<tr><td colspan="4" style="color: #a0aec0;">جاري تحميل الأرشيف...</td></tr>';
+            try {
+                const querySnapshot = await getDocs(collection(db, "participation_scores"));
+                let lessons = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // تجاهل ملفات TOTALS وعرض الدروس اليومية فقط
+                    if(!data.isTotalDoc && data.date && data.subject) { 
+                        lessons.push({ id: doc.id, ...data }); 
+                    }
+                });
+
+                if (lessons.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="color: #a0aec0;">لا توجد دروس محفوظة في الأرشيف حتى الآن.</td></tr>';
+                    return;
+                }
+
+                lessons.sort((a, b) => b.createdAt - a.createdAt);
+                tbody.innerHTML = '';
+
+                lessons.forEach(lesson => {
+                    window.allLessonsData[lesson.id] = lesson;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${lesson.date}</strong><br><small style="color: #718096;">${lesson.dayOfWeek}</small></td>
+                        <td><span style="color: var(--primary); font-weight: bold;">${lesson.subject}</span><br>شعبة: ${lesson.section}</td>
+                        <td>${lesson.lessonTitle}</td>
+                        <td><button class="btn-view" onclick="viewResults('${lesson.id}')">تفاصيل اليوم 👁️</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("خطأ:", error);
+                tbody.innerHTML = '<tr><td colspan="4" style="color: red;">حدث خطأ أثناء تحميل البيانات.</td></tr>';
+            }
+        };
+
+        document.getElementById('open-archive-btn').addEventListener('click', () => {
+            setupSection.classList.remove('active');
+            archiveSection.classList.add('active');
+            loadArchive();
+        });
+
+        document.getElementById('back-to-setup-btn').addEventListener('click', () => {
+            archiveSection.classList.remove('active');
+            setupSection.classList.add('active');
+        });
+
+        window.viewResults = (docId) => {
+            const lesson = window.allLessonsData[docId];
+            document.getElementById('modal-title').innerText = `نتائج مشاركة يوم: ${lesson.date}`;
+            const modalTbody = document.getElementById('modal-tbody');
+            modalTbody.innerHTML = '';
+
+            if (lesson.finalLeaderboard && lesson.finalLeaderboard.length > 0) {
+                lesson.finalLeaderboard.forEach((student, index) => {
+                    modalTbody.innerHTML += `
+                        <tr>
+                            <td style="font-weight: bold;">${index + 1}</td>
+                            <td>${student.name}</td>
+                            <td style="color: var(--success); font-weight: bold;">${student.points}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                modalTbody.innerHTML = '<tr><td colspan="3" style="color: #a0aec0;">لم يتم إنهاء هذا الدرس بشكل كامل لحفظ نتائجه.</td></tr>';
+            }
+            document.getElementById('results-modal').style.display = 'flex';
+        };
+
+        window.closeModal = () => { document.getElementById('results-modal').style.display = 'none'; };
+
+    </script>
+</body>
+</html>
